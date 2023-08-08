@@ -22,7 +22,7 @@ export class Discuit {
     /**
      * Communities being watched.
      */
-    watchers;
+    watchers = [];
     /**
      * How often the client should check for new posts in the watched communities.
      */
@@ -81,7 +81,7 @@ export class Discuit {
      * @param communities The communities to watch.
      * @param cb The callback.
      */
-    watch = async (communities, cb) => {
+    watch = (communities, cb) => {
         for (let i = 0; i < communities.length; i++) {
             const community = communities[i].toLowerCase();
             const found = this.watchers.find((w) => w.community === community);
@@ -95,6 +95,7 @@ export class Discuit {
         if (!this.watchInterval) {
             this.watchInterval = setInterval(this.watchLoop, this.watchInterval);
         }
+        this.watchLoop().then();
     };
     /**
      * Submits a comment.

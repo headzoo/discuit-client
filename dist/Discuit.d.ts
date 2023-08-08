@@ -64,7 +64,7 @@ export declare class Discuit {
      * @param communities The communities to watch.
      * @param cb The callback.
      */
-    watch: (communities: string[], cb: (community: string, post: Post) => void) => Promise<void>;
+    watch: (communities: string[], cb: (community: string, post: Post) => void) => void;
     /**
      * Submits a comment.
      *

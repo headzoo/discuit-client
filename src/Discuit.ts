@@ -35,7 +35,7 @@ export class Discuit {
   /**
    * Communities being watched.
    */
-  protected watchers: Watcher[];
+  protected watchers: Watcher[] = [];
 
   /**
    * How often the client should check for new posts in the watched communities.
@@ -104,10 +104,7 @@ export class Discuit {
    * @param communities The communities to watch.
    * @param cb The callback.
    */
-  public watch = async (
-    communities: string[],
-    cb: (community: string, post: Post) => void,
-  ): Promise<void> => {
+  public watch = (communities: string[], cb: (community: string, post: Post) => void): void => {
     for (let i = 0; i < communities.length; i++) {
       const community = communities[i].toLowerCase();
       const found = this.watchers.find((w) => w.community === community);
@@ -121,6 +118,7 @@ export class Discuit {
     if (!this.watchInterval) {
       this.watchInterval = setInterval(this.watchLoop, this.watchInterval as number);
     }
+    this.watchLoop().then();
   };
 
   /**
