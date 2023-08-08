@@ -1,6 +1,5 @@
 /// <reference types="node" />
-import { AxiosInstance } from 'axios';
-import { PostSort, Post, User, ISeenChecker } from './types';
+import { PostSort, Post, User, ISeenChecker, IFetch } from './types';
 import { ILogger } from './ILogger';
 export type WatchCallback = (community: string, post: Post) => void;
 export interface Watcher {
@@ -12,17 +11,13 @@ export interface Watcher {
  */
 export declare class Discuit {
     /**
-     * The base url for the api.
-     */
-    static readonly baseURL = "https://discuit.net/api";
-    /**
-     * Used to make http requests.
-     */
-    axiosInstance: AxiosInstance;
-    /**
      * Sets a logger that will be used to log messages.
      */
     logger: ILogger | null;
+    /**
+     * Makes the HTTP requests to the api.
+     */
+    readonly fetcher: IFetch;
     /**
      * The authenticated user.
      */
@@ -39,14 +34,6 @@ export declare class Discuit {
      * Keeps track of which posts the watch() command has seen.
      */
     seenChecker: ISeenChecker;
-    /**
-     * The current csrf token.
-     */
-    protected csrfToken: string | null;
-    /**
-     * The session cookie.
-     */
-    protected cookie: string | null;
     /**
      * Constructor
      */
@@ -92,16 +79,6 @@ export declare class Discuit {
      * Also stores the token internally for future requests.
      */
     getToken: () => Promise<string | null>;
-    /**
-     * Makes a request to the API.
-     *
-     * Automatically adds the csrf token and cookie to the request.
-     *
-     * @param method The request method.
-     * @param path The request path.
-     * @param body The request body.
-     */
-    private request;
     /**
      * Formats a csrf token.
      *

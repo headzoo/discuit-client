@@ -96,3 +96,65 @@ export interface ISeenChecker {
    */
   isSeen: (id: string) => Promise<boolean>;
 }
+
+/**
+ * Request methods.
+ */
+export type Method =
+  | 'get'
+  | 'GET'
+  | 'delete'
+  | 'DELETE'
+  | 'head'
+  | 'HEAD'
+  | 'options'
+  | 'OPTIONS'
+  | 'post'
+  | 'POST'
+  | 'put'
+  | 'PUT'
+  | 'patch'
+  | 'PATCH'
+  | 'purge'
+  | 'PURGE'
+  | 'link'
+  | 'LINK'
+  | 'unlink'
+  | 'UNLINK';
+
+/**
+ * Class that makes HTTP requests.
+ */
+export interface IFetch {
+  /**
+   * Makes an HTTP request.
+   *
+   * @param method The request method.
+   * @param path Request path relative to the base URL.
+   * @param body The post body.
+   */
+  request: <T>(method: Method, path: string, body?: any) => Promise<FetchResponse<T>>;
+
+  /**
+   * Whether the client has a CSRF token.
+   */
+  hasToken: () => boolean;
+}
+
+/**
+ * Header value.
+ */
+export type HeaderValue = string | string[] | number | boolean | null;
+
+/**
+ * Map of headers.
+ */
+export interface Headers {
+  [key: string]: HeaderValue;
+}
+
+export interface FetchResponse<T> {
+  statusCode: number;
+  data: any;
+  headers: Headers;
+}

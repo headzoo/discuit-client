@@ -1,6 +1,6 @@
-import axios, { AxiosInstance, AxiosRequestConfig, Method } from 'axios';
-import { PostSort, Post, User, ISeenChecker } from './types';
+import { PostSort, Post, User, ISeenChecker, IFetch, HeaderValue } from './types';
 import { MemorySeenChecker } from './MemorySeenChecker';
+import { AxiosFetch } from './AxiosFetch';
 import { ILogger } from './ILogger';
 
 export type WatchCallback = (community: string, post: Post) => void;
@@ -14,19 +14,14 @@ export interface Watcher {
  */
 export class Discuit {
   /**
-   * The base url for the api.
-   */
-  public static readonly baseURL = 'https://discuit.net/api';
-
-  /**
-   * Used to make http requests.
-   */
-  public axiosInstance: AxiosInstance;
-
-  /**
    * Sets a logger that will be used to log messages.
    */
   public logger: ILogger | null;
+
+  /**
+   * Makes the HTTP requests to the api.
+   */
+  public readonly fetcher: IFetch;
 
   /**
    * The authenticated user.
@@ -49,27 +44,10 @@ export class Discuit {
   public seenChecker: ISeenChecker = new MemorySeenChecker();
 
   /**
-   * The current csrf token.
-   */
-  protected csrfToken: string | null = null;
-
-  /**
-   * The session cookie.
-   */
-  protected cookie: string | null = null;
-
-  /**
    * Constructor
    */
   constructor() {
-    this.axiosInstance = axios.create({
-      baseURL: Discuit.baseURL,
-      headers: {
-        Referer: 'https://discuit.net/',
-        'User-Agent':
-          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-      },
-    });
+    this.fetcher = new AxiosFetch(this.logger);
   }
 
   /**
@@ -79,24 +57,24 @@ export class Discuit {
    * @param password The password.
    */
   public login = async (username: string, password: string): Promise<User | null> => {
-    if (!this.csrfToken || !this.cookie) {
-      if (!(await this.getToken())) {
-        console.warn('Failed to get csrf token');
-        return null;
-      }
+    if (!this.fetcher.hasToken() && !(await this.getToken())) {
+      console.warn('Failed to get csrf token');
+      return null;
     }
 
-    return await this.request('POST', '/_login', {
-      username,
-      password,
-    }).then((res) => {
-      if (!res.id) {
-        return null;
-      }
-      this.user = res;
+    return await this.fetcher
+      .request<User>('POST', '/_login', {
+        username,
+        password,
+      })
+      .then((res) => {
+        if (!res.data.id) {
+          return null;
+        }
+        this.user = res.data;
 
-      return this.user;
-    });
+        return this.user;
+      });
   };
 
   /**
@@ -108,6 +86,7 @@ export class Discuit {
   public watch = (communities: string[], cb: (community: string, post: Post) => void): void => {
     for (let i = 0; i < communities.length; i++) {
       const community = communities[i].toLowerCase();
+
       const found = this.watchers.find((w) => w.community === community);
       if (found) {
         found.callbacks.push(cb);
@@ -169,12 +148,14 @@ export class Discuit {
       throw new Error('Not logged in');
     }
 
-    return await this.request('POST', `/posts/${publicId}/comments?userGroup=normal`, {
-      body,
-      parentCommentId,
-    }).then((res) => {
-      return res;
-    });
+    return await this.fetcher
+      .request('POST', `/posts/${publicId}/comments?userGroup=normal`, {
+        body,
+        parentCommentId,
+      })
+      .then((res) => {
+        return res;
+      });
   };
 
   /**
@@ -184,9 +165,11 @@ export class Discuit {
    * @param limit The number of posts to fetch
    */
   public getPosts = async (sort: PostSort = 'latest', limit: number = 10): Promise<Post[]> => {
-    return await this.request('GET', `/posts?sort=${sort}&limit=${limit}`).then((res) => {
-      return res.posts;
-    });
+    return await this.fetcher
+      .request<{ posts: Post[] }>('GET', `/posts?sort=${sort}&limit=${limit}`)
+      .then((res) => {
+        return res.data.posts;
+      });
   };
 
   /**
@@ -199,68 +182,8 @@ export class Discuit {
       this.logger.debug(`Making GET request to /_initial`);
     }
 
-    return await this.axiosInstance.get('/_initial').then((res) => {
-      this.cookie = (res.headers['set-cookie'] || '').toString();
-      if (this.logger) {
-        this.logger.debug(`Got cookies: "${this.cookie}"`);
-      }
-      this.csrfToken = this.formatToken(res.headers['csrf-token']);
-      if (this.logger) {
-        this.logger.debug(`Got csrf token: "${this.csrfToken}"`);
-      }
-
-      return this.csrfToken;
-    });
-  };
-
-  /**
-   * Makes a request to the API.
-   *
-   * Automatically adds the csrf token and cookie to the request.
-   *
-   * @param method The request method.
-   * @param path The request path.
-   * @param body The request body.
-   */
-  private request = async (method: Method, path: string, body: any = null): Promise<any> => {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    if (this.csrfToken) {
-      headers['X-Csrf-Token'] = this.csrfToken;
-    }
-    if (this.cookie) {
-      headers['Cookie'] = this.cookie;
-    }
-
-    const config: AxiosRequestConfig = {
-      url: path,
-      method,
-      headers,
-    };
-    if (method === 'POST' && body) {
-      config.data = body;
-    }
-
-    if (this.logger) {
-      this.logger.debug(`Making ${method} request to ${path}`, config);
-    }
-
-    return await this.axiosInstance.request(config).then((res) => {
-      if (res.headers['set-cookie']) {
-        /*this.cookie = res.headers.get('set-cookie');
-          if (this.debugging) {
-            console.log(`Got cookies: "${this.cookie}"`);
-          }*/
-      }
-      if (res.headers['csrf-token']) {
-        /*this.csrfToken = this.formatToken(res.headers.get('csrf-token'));
-          if (this.debugging) {
-            console.log(`Got csrf token: "${this.csrfToken}"`);
-          }*/
-      }
-
-      return res.data;
+    return await this.fetcher.request<string | null>('GET', '/_initial').then((res) => {
+      return this.formatToken(res.headers['csrf-token']);
     });
   };
 
@@ -269,7 +192,7 @@ export class Discuit {
    *
    * @param token The token to format.
    */
-  private formatToken = (token: string | string[] | null): string => {
+  private formatToken = (token: HeaderValue): string => {
     if (!token) {
       return '';
     }
@@ -277,13 +200,10 @@ export class Discuit {
     if (Array.isArray(token)) {
       return token[0];
     }
+    if (typeof token === 'number') {
+      return token.toString();
+    }
 
-    return (
-      token
-        .split(',')
-        .filter((v) => v.trim())
-        .shift()
-        ?.trim() || ''
-    );
+    return token.toString();
   };
 }
