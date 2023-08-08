@@ -1,6 +1,11 @@
+/**
+ * How posts should be sorted.
+ */
 export type PostSort = 'hot' | 'latest' | 'activity' | 'day' | 'week' | 'month' | 'year';
-export type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
+/**
+ * Represents a post link.
+ */
 export interface Link {
   url: string;
   hostname: string;
@@ -14,6 +19,9 @@ export interface Link {
   };
 }
 
+/**
+ * Represents a post.
+ */
 export interface Post {
   id: string;
   type: string;
@@ -49,6 +57,9 @@ export interface Post {
   userVotedUp: boolean;
 }
 
+/**
+ * Represents a user.
+ */
 export interface User {
   id: string;
   username: string;
