@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { AxiosInstance } from 'axios';
-import { PostSort, Post, User } from './types';
+import { PostSort, Post, User, ISeenChecker } from './types';
 import { ILogger } from './ILogger';
 export type WatchCallback = (community: string, post: Post) => void;
 export interface Watcher {
@@ -36,9 +36,9 @@ export declare class Discuit {
      */
     watchInterval: NodeJS.Timer | number;
     /**
-     * Posts that have been seen by the watcher.
+     * Keeps track of which posts the watch() command has seen.
      */
-    protected seenPosts: string[];
+    seenChecker: ISeenChecker;
     /**
      * The current csrf token.
      */

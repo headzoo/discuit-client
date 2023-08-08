@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, Method } from 'axios';
-import { PostSort, Post, User } from './types';
+import { PostSort, Post, User, ISeenChecker } from './types';
+import { MemorySeenChecker } from './MemorySeenChecker';
 import { ILogger } from './ILogger';
 
 export type WatchCallback = (community: string, post: Post) => void;
@@ -43,9 +44,9 @@ export class Discuit {
   public watchInterval: NodeJS.Timer | number = 1000 * 60 * 5; // 5 minutes
 
   /**
-   * Posts that have been seen by the watcher.
+   * Keeps track of which posts the watch() command has seen.
    */
-  protected seenPosts: string[] = [];
+  public seenChecker: ISeenChecker = new MemorySeenChecker();
 
   /**
    * The current csrf token.
@@ -166,16 +167,22 @@ export class Discuit {
     const recent = await this.getPosts('latest', 50);
     for (let i = 0; i < recent.length; i++) {
       const post = recent[i];
-      if (this.seenPosts.includes(post.id)) {
+
+      // Have we already seen this?
+      if (await this.seenChecker.isSeen(post.id)) {
+        if (this.logger) {
+          this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
+        }
         continue;
       }
 
       for (let j = 0; j < this.watchers.length; j++) {
         const watcher = this.watchers[j];
+
         if (watcher.community === post.communityName.toLowerCase()) {
           for (let k = 0; k < watcher.callbacks.length; k++) {
             watcher.callbacks[k](post.communityName, post);
-            this.seenPosts.push(post.id);
+            await this.seenChecker.add(post.id);
           }
         }
       }

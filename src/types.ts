@@ -77,3 +77,22 @@ export interface User {
   notificationsNewCount: number;
   moddingList: null;
 }
+
+/**
+ * Used to determine whether the watch() command has seen a post before.
+ */
+export interface ISeenChecker {
+  /**
+   * Marks a post as seen.
+   *
+   * @param id The post id.
+   */
+  add: (id: string) => Promise<void>;
+
+  /**
+   * Returns a value indicating whether the post has been seen.
+   *
+   * @param id The post id.
+   */
+  isSeen: (id: string) => Promise<boolean>;
+}

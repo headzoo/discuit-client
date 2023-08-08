@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Discuit = void 0;
 const axios_1 = __importDefault(require("axios"));
+const MemorySeenChecker_1 = require("./MemorySeenChecker");
 /**
  * Represents a Discuit client.
  */
@@ -31,9 +32,9 @@ class Discuit {
          */
         this.watchInterval = 1000 * 60 * 5; // 5 minutes
         /**
-         * Posts that have been seen by the watcher.
+         * Keeps track of which posts the watch() command has seen.
          */
-        this.seenPosts = [];
+        this.seenChecker = new MemorySeenChecker_1.MemorySeenChecker();
         /**
          * The current csrf token.
          */
@@ -126,7 +127,11 @@ class Discuit {
             const recent = yield this.getPosts('latest', 50);
             for (let i = 0; i < recent.length; i++) {
                 const post = recent[i];
-                if (this.seenPosts.includes(post.id)) {
+                // Have we already seen this?
+                if (yield this.seenChecker.isSeen(post.id)) {
+                    if (this.logger) {
+                        this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
+                    }
                     continue;
                 }
                 for (let j = 0; j < this.watchers.length; j++) {
@@ -134,7 +139,7 @@ class Discuit {
                     if (watcher.community === post.communityName.toLowerCase()) {
                         for (let k = 0; k < watcher.callbacks.length; k++) {
                             watcher.callbacks[k](post.communityName, post);
-                            this.seenPosts.push(post.id);
+                            yield this.seenChecker.add(post.id);
                         }
                     }
                 }
