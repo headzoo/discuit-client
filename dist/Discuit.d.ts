@@ -66,6 +66,12 @@ export declare class Discuit {
      */
     watch: (communities: string[], cb: (community: string, post: Post) => void) => void;
     /**
+     * Callback for setInterval.
+     *
+     * Checks for new posts and calls the callbacks.
+     */
+    protected watchLoop: () => Promise<void>;
+    /**
      * Submits a comment.
      *
      * @param publicId The public id of the post.
@@ -80,12 +86,6 @@ export declare class Discuit {
      * @param limit The number of posts to fetch
      */
     getPosts: (sort?: PostSort, limit?: number) => Promise<Post[]>;
-    /**
-     * Callback for setInterval.
-     *
-     * Checks for new posts and calls the callbacks.
-     */
-    protected watchLoop: () => Promise<void>;
     /**
      * Fetches a csrf token from the server.
      *
