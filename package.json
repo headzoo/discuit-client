@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "main": "dist/index.js",
   "license": "MIT",
+  "private": false,
   "devDependencies": {
     "@types/node": "^20.4.8",
     "nodemon": "^3.0.1",
