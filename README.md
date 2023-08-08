@@ -25,7 +25,7 @@ Using the watch method.
 ```js
 import { Discuit } from '@headz/discuit';
 
-const communities = ['news'];
+const communities = ['news', 'politics', 'sports'];
 
 const discuit = new Discuit();
 await discuit.login(process.env.DISCUIT_USERNAME, process.env.DISCUIT_PASSWORD);
