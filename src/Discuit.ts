@@ -123,6 +123,37 @@ export class Discuit {
   };
 
   /**
+   * Callback for setInterval.
+   *
+   * Checks for new posts and calls the callbacks.
+   */
+  protected watchLoop = async (): Promise<void> => {
+    const recent = await this.getPosts('latest', 50);
+    for (let i = 0; i < recent.length; i++) {
+      const post = recent[i];
+
+      // Have we already seen this?
+      if (await this.seenChecker.isSeen(post.id)) {
+        if (this.logger) {
+          this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
+        }
+        continue;
+      }
+
+      for (let j = 0; j < this.watchers.length; j++) {
+        const watcher = this.watchers[j];
+
+        if (watcher.community === post.communityName.toLowerCase()) {
+          for (let k = 0; k < watcher.callbacks.length; k++) {
+            watcher.callbacks[k](post.communityName, post);
+            await this.seenChecker.add(post.id);
+          }
+        }
+      }
+    }
+  };
+
+  /**
    * Submits a comment.
    *
    * @param publicId The public id of the post.
@@ -156,37 +187,6 @@ export class Discuit {
     return await this.request('GET', `/posts?sort=${sort}&limit=${limit}`).then((res) => {
       return res.posts;
     });
-  };
-
-  /**
-   * Callback for setInterval.
-   *
-   * Checks for new posts and calls the callbacks.
-   */
-  protected watchLoop = async (): Promise<void> => {
-    const recent = await this.getPosts('latest', 50);
-    for (let i = 0; i < recent.length; i++) {
-      const post = recent[i];
-
-      // Have we already seen this?
-      if (await this.seenChecker.isSeen(post.id)) {
-        if (this.logger) {
-          this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
-        }
-        continue;
-      }
-
-      for (let j = 0; j < this.watchers.length; j++) {
-        const watcher = this.watchers[j];
-
-        if (watcher.community === post.communityName.toLowerCase()) {
-          for (let k = 0; k < watcher.callbacks.length; k++) {
-            watcher.callbacks[k](post.communityName, post);
-            await this.seenChecker.add(post.id);
-          }
-        }
-      }
-    }
   };
 
   /**
