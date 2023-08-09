@@ -4,6 +4,11 @@
 export type PostSort = 'hot' | 'latest' | 'activity' | 'day' | 'week' | 'month' | 'year';
 
 /**
+ * Not real sure what this is.
+ */
+export type UserGroups = 'normal' | 'moderator' | 'admin';
+
+/**
  * Represents a post link.
  */
 export interface Link {
@@ -55,6 +60,35 @@ export interface Post {
   commentsNext: string;
   userVoted: boolean;
   userVotedUp: boolean;
+}
+
+/**
+ * Represents a comment.
+ */
+export interface Comment {
+  id: string;
+  parentId: string | null;
+  ancestors: any[];
+  body: string;
+  communityId: string;
+  communityName: string;
+  createdAt: string;
+  deletedAt: string | null;
+  depth: number;
+  upvotes: number;
+  downvotes: number;
+  editedAt: string | null;
+  noReplies: number;
+  noRepliesDirect: number;
+  postDeleted: boolean;
+  postId: string;
+  postPublicId: string;
+  userDeleted: boolean;
+  userGroup: UserGroups;
+  userId: string;
+  userVoted: boolean;
+  userVotedUp: boolean;
+  username: string;
 }
 
 /**

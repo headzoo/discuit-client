@@ -1,4 +1,4 @@
-import { PostSort, Post, User, ISeenChecker, IFetch } from './types';
+import { PostSort, Post, User, ISeenChecker, IFetch, UserGroups, Comment } from './types';
 import { MemorySeenChecker } from './MemorySeenChecker';
 import { AxiosFetch } from './AxiosFetch';
 import { ILogger } from './ILogger';
@@ -168,15 +168,15 @@ export class Discuit {
   /**
    * Submits a comment.
    *
-   * @param publicId The public id of the post.
+   * @param publicId The PUBLIC id of the post.
    * @param body The comment body.
    * @param parentCommentId The id of the parent comment.
    */
-  public comment = async (
+  public postComment = async (
     publicId: string,
     body: string,
     parentCommentId: string | null = null,
-  ): Promise<any> => {
+  ): Promise<Comment | null> => {
     if (!this.user) {
       throw new Error('Not logged in');
     }
@@ -187,7 +187,30 @@ export class Discuit {
         parentCommentId,
       })
       .then((res) => {
-        return res;
+        return res?.data;
+      });
+  };
+
+  /**
+   * Deletes a comment.
+   *
+   * @param postId The PRIVATE id of the post.
+   * @param commentId The comment id.
+   * @param as The user group to delete as.
+   */
+  public deleteComment = async (
+    postId: string,
+    commentId: string,
+    as?: UserGroups,
+  ): Promise<boolean> => {
+    if (!this.user) {
+      throw new Error('Not logged in');
+    }
+
+    return await this.fetcher
+      .request('DELETE', `/posts/${postId}/comments/${commentId}?deleteAs=${as || 'normal'}`)
+      .then(() => {
+        return true;
       });
   };
 

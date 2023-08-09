@@ -17,7 +17,8 @@ await discuit.login(process.env.DISCUIT_USERNAME, process.env.DISCUIT_PASSWORD);
 const posts = await discuit.getPosts('latest', 50);
 for (let i = 0; i < posts.length; i++) {
   const post = posts[i];
-  await discuit.comment(post.id, 'Welcome to the community!');
+  const comment = await discuit.postComment(post.id, 'Welcome to the community!');
+  await discuit.deleteComment(comment.postId, comment.id);
 }
 ```
 
@@ -34,7 +35,8 @@ await discuit.login(process.env.DISCUIT_USERNAME, process.env.DISCUIT_PASSWORD);
 discuit.watch(communities, async (community, post) => {
   console.log(community, post);
 
-  await discuit.comment(post.id, 'Welcome to the community!');
+  const comment = await discuit.postComment(post.id, 'Welcome to the community!');
+  await discuit.deleteComment(comment.postId, comment.id);
 });
 ```
 
