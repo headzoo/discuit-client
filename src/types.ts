@@ -127,13 +127,18 @@ export type Method =
  */
 export interface IFetch {
   /**
+   * Gets a CSRF token.
+   */
+  getToken: () => Promise<string | null>;
+
+  /**
    * Makes an HTTP request.
    *
    * @param method The request method.
    * @param path Request path relative to the base URL.
    * @param body The post body.
    */
-  request: <T>(method: Method, path: string, body?: any) => Promise<FetchResponse<T>>;
+  request: <T>(method: Method, path: string, body?: any) => Promise<FetchResponse<T> | null>;
 
   /**
    * Whether the client has a CSRF token.

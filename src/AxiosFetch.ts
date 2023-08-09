@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { IFetch, FetchResponse, Method, Headers } from './types';
+import { IFetch, FetchResponse, Method, Headers, HeaderValue } from './types';
 import { ILogger } from '@/ILogger';
 
 /**
@@ -50,13 +50,32 @@ export class AxiosFetch implements IFetch {
   };
 
   /**
+   * Fetches a csrf token from the server.
+   *
+   * Also stores the token internally for future requests.
+   */
+  public getToken = async (): Promise<string | null> => {
+    return await this.request<string | null>('GET', '/_initial').then((resp) => {
+      if (!resp) {
+        if (this.logger) {
+          this.logger.debug(`Got null response from /_initial`);
+        }
+
+        return null;
+      }
+
+      return this.formatToken(resp.headers['csrf-token']);
+    });
+  };
+
+  /**
    * @inheritdoc
    */
   public request = async <T>(
     method: Method,
     path: string,
     body: any = null,
-  ): Promise<FetchResponse<T>> => {
+  ): Promise<FetchResponse<T> | null> => {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -80,30 +99,64 @@ export class AxiosFetch implements IFetch {
       this.logger.debug(`Making ${method} request to ${path}`, config);
     }
 
-    return await this.axiosInstance.request(config).then((res) => {
-      const { headers } = res;
+    try {
+      return await this.axiosInstance
+        .request(config)
+        .then((res) => {
+          const { headers } = res;
 
-      if (headers['set-cookie']) {
-        /*this.cookie = res.headers.get('set-cookie');
-          if (this.debugging) {
-            console.log(`Got cookies: "${this.cookie}"`);
-          }*/
-      }
-      if (headers['csrf-token']) {
-        /*this.csrfToken = this.formatToken(res.headers.get('csrf-token'));
-          if (this.debugging) {
-            console.log(`Got csrf token: "${this.csrfToken}"`);
-          }*/
+          if (!this.cookie && headers['set-cookie']) {
+            this.cookie = (headers['set-cookie'] || '').toString();
+          }
+          if (!this.csrfToken && headers['csrf-token']) {
+            this.csrfToken = this.formatToken(headers['csrf-token']);
+          }
+
+          return {
+            statusCode: res.status,
+            data: res.data,
+            headers: {
+              'set-cookie': headers['set-cookie'],
+              'csrf-token': headers['csrf-token'],
+            } as Headers,
+          };
+        })
+        .catch((error) => {
+          if (this.logger) {
+            this.logger.error(
+              `${error.response}: Error making ${method} request to ${path}`,
+              error,
+            );
+          }
+
+          throw error;
+        });
+    } catch (error) {
+      if (this.logger) {
+        this.logger.error(`Error making ${method} request to ${path}`, error);
       }
 
-      return {
-        statusCode: res.status,
-        data: res.data,
-        headers: {
-          'set-cookie': headers['set-cookie'],
-          'csrf-token': headers['csrf-token'],
-        } as Headers,
-      };
-    });
+      throw error;
+    }
+  };
+
+  /**
+   * Formats a csrf token.
+   *
+   * @param token The token to format.
+   */
+  private formatToken = (token: HeaderValue): string => {
+    if (!token) {
+      return '';
+    }
+
+    if (Array.isArray(token)) {
+      return token[0];
+    }
+    if (typeof token === 'number') {
+      return token.toString();
+    }
+
+    return token.toString();
   };
 }

@@ -31,6 +31,10 @@ export declare class Discuit {
      */
     watchInterval: NodeJS.Timer | number;
     /**
+     * How long to wait between callbacks in the watch loop.
+     */
+    sleepPeriod: number;
+    /**
      * Keeps track of which posts the watch() command has seen.
      */
     seenChecker: ISeenChecker;
@@ -73,16 +77,4 @@ export declare class Discuit {
      * @param limit The number of posts to fetch
      */
     getPosts: (sort?: PostSort, limit?: number) => Promise<Post[]>;
-    /**
-     * Fetches a csrf token from the server.
-     *
-     * Also stores the token internally for future requests.
-     */
-    getToken: () => Promise<string | null>;
-    /**
-     * Formats a csrf token.
-     *
-     * @param token The token to format.
-     */
-    private formatToken;
 }

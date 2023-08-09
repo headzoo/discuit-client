@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Discuit = void 0;
 const MemorySeenChecker_1 = require("./MemorySeenChecker");
 const AxiosFetch_1 = require("./AxiosFetch");
+const utils_1 = require("./utils");
 /**
  * Represents a Discuit client.
  */
@@ -27,7 +28,11 @@ class Discuit {
         /**
          * How often the client should check for new posts in the watched communities.
          */
-        this.watchInterval = 1000 * 60 * 5; // 5 minutes
+        this.watchInterval = 1000 * 60 * 10; // 10 minutes
+        /**
+         * How long to wait between callbacks in the watch loop.
+         */
+        this.sleepPeriod = 5000; // 5 seconds
         /**
          * Keeps track of which posts the watch() command has seen.
          */
@@ -39,8 +44,10 @@ class Discuit {
          * @param password The password.
          */
         this.login = (username, password) => __awaiter(this, void 0, void 0, function* () {
-            if (!this.fetcher.hasToken() && !(yield this.getToken())) {
-                console.warn('Failed to get csrf token');
+            if (!this.fetcher.hasToken() && !(yield this.fetcher.getToken())) {
+                if (this.logger) {
+                    this.logger.warn('Failed to get csrf token');
+                }
                 return null;
             }
             return yield this.fetcher
@@ -49,11 +56,17 @@ class Discuit {
                 password,
             })
                 .then((res) => {
-                if (!res.data.id) {
+                if (!res || !res.data.id) {
                     return null;
                 }
                 this.user = res.data;
                 return this.user;
+            })
+                .catch((err) => {
+                if (this.logger) {
+                    this.logger.error(`Failed to login: ${err.response.status}`);
+                }
+                return null;
             });
         });
         /**
@@ -84,24 +97,39 @@ class Discuit {
          * Checks for new posts and calls the callbacks.
          */
         this.watchLoop = () => __awaiter(this, void 0, void 0, function* () {
-            const recent = yield this.getPosts('latest', 50);
-            for (let i = 0; i < recent.length; i++) {
-                const post = recent[i];
-                // Have we already seen this?
-                if (yield this.seenChecker.isSeen(post.id)) {
-                    if (this.logger) {
-                        this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
+            try {
+                const recent = yield this.getPosts('latest', 50);
+                for (let i = 0; i < recent.length; i++) {
+                    const post = recent[i];
+                    // Have we already seen this?
+                    if (yield this.seenChecker.isSeen(post.id)) {
+                        if (this.logger) {
+                            this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
+                        }
+                        continue;
                     }
-                    continue;
-                }
-                for (let j = 0; j < this.watchers.length; j++) {
-                    const watcher = this.watchers[j];
-                    if (watcher.community === post.communityName.toLowerCase()) {
-                        for (let k = 0; k < watcher.callbacks.length; k++) {
-                            watcher.callbacks[k](post.communityName, post);
-                            yield this.seenChecker.add(post.id);
+                    for (let j = 0; j < this.watchers.length; j++) {
+                        const watcher = this.watchers[j];
+                        if (watcher.community === post.communityName.toLowerCase()) {
+                            for (let k = 0; k < watcher.callbacks.length; k++) {
+                                try {
+                                    watcher.callbacks[k](post.communityName, post);
+                                }
+                                catch (error) {
+                                    if (this.logger) {
+                                        this.logger.error(error);
+                                    }
+                                }
+                                yield this.seenChecker.add(post.id);
+                                yield (0, utils_1.sleep)(this.sleepPeriod);
+                            }
                         }
                     }
+                }
+            }
+            catch (error) {
+                if (this.logger) {
+                    this.logger.error(error);
                 }
             }
         });
@@ -135,39 +163,15 @@ class Discuit {
             return yield this.fetcher
                 .request('GET', `/posts?sort=${sort}&limit=${limit}`)
                 .then((res) => {
+                if (!res) {
+                    if (this.logger) {
+                        this.logger.debug(`Got null response from /posts`);
+                    }
+                    return [];
+                }
                 return res.data.posts;
             });
         });
-        /**
-         * Fetches a csrf token from the server.
-         *
-         * Also stores the token internally for future requests.
-         */
-        this.getToken = () => __awaiter(this, void 0, void 0, function* () {
-            if (this.logger) {
-                this.logger.debug(`Making GET request to /_initial`);
-            }
-            return yield this.fetcher.request('GET', '/_initial').then((res) => {
-                return this.formatToken(res.headers['csrf-token']);
-            });
-        });
-        /**
-         * Formats a csrf token.
-         *
-         * @param token The token to format.
-         */
-        this.formatToken = (token) => {
-            if (!token) {
-                return '';
-            }
-            if (Array.isArray(token)) {
-                return token[0];
-            }
-            if (typeof token === 'number') {
-                return token.toString();
-            }
-            return token.toString();
-        };
         this.fetcher = new AxiosFetch_1.AxiosFetch(this.logger);
     }
 }

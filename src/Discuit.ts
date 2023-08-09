@@ -1,7 +1,8 @@
-import { PostSort, Post, User, ISeenChecker, IFetch, HeaderValue } from './types';
+import { PostSort, Post, User, ISeenChecker, IFetch } from './types';
 import { MemorySeenChecker } from './MemorySeenChecker';
 import { AxiosFetch } from './AxiosFetch';
 import { ILogger } from './ILogger';
+import { sleep } from './utils';
 
 export type WatchCallback = (community: string, post: Post) => void;
 export interface Watcher {
@@ -36,7 +37,12 @@ export class Discuit {
   /**
    * How often the client should check for new posts in the watched communities.
    */
-  public watchInterval: NodeJS.Timer | number = 1000 * 60 * 5; // 5 minutes
+  public watchInterval: NodeJS.Timer | number = 1000 * 60 * 10; // 10 minutes
+
+  /**
+   * How long to wait between callbacks in the watch loop.
+   */
+  public sleepPeriod: number = 5000; // 5 seconds
 
   /**
    * Keeps track of which posts the watch() command has seen.
@@ -57,8 +63,10 @@ export class Discuit {
    * @param password The password.
    */
   public login = async (username: string, password: string): Promise<User | null> => {
-    if (!this.fetcher.hasToken() && !(await this.getToken())) {
-      console.warn('Failed to get csrf token');
+    if (!this.fetcher.hasToken() && !(await this.fetcher.getToken())) {
+      if (this.logger) {
+        this.logger.warn('Failed to get csrf token');
+      }
       return null;
     }
 
@@ -68,12 +76,19 @@ export class Discuit {
         password,
       })
       .then((res) => {
-        if (!res.data.id) {
+        if (!res || !res.data.id) {
           return null;
         }
         this.user = res.data;
 
         return this.user;
+      })
+      .catch((err) => {
+        if (this.logger) {
+          this.logger.error(`Failed to login: ${err.response.status}`);
+        }
+
+        return null;
       });
   };
 
@@ -107,27 +122,41 @@ export class Discuit {
    * Checks for new posts and calls the callbacks.
    */
   protected watchLoop = async (): Promise<void> => {
-    const recent = await this.getPosts('latest', 50);
-    for (let i = 0; i < recent.length; i++) {
-      const post = recent[i];
+    try {
+      const recent = await this.getPosts('latest', 50);
+      for (let i = 0; i < recent.length; i++) {
+        const post = recent[i];
 
-      // Have we already seen this?
-      if (await this.seenChecker.isSeen(post.id)) {
-        if (this.logger) {
-          this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
+        // Have we already seen this?
+        if (await this.seenChecker.isSeen(post.id)) {
+          if (this.logger) {
+            this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
+          }
+          continue;
         }
-        continue;
-      }
 
-      for (let j = 0; j < this.watchers.length; j++) {
-        const watcher = this.watchers[j];
+        for (let j = 0; j < this.watchers.length; j++) {
+          const watcher = this.watchers[j];
 
-        if (watcher.community === post.communityName.toLowerCase()) {
-          for (let k = 0; k < watcher.callbacks.length; k++) {
-            watcher.callbacks[k](post.communityName, post);
-            await this.seenChecker.add(post.id);
+          if (watcher.community === post.communityName.toLowerCase()) {
+            for (let k = 0; k < watcher.callbacks.length; k++) {
+              try {
+                watcher.callbacks[k](post.communityName, post);
+              } catch (error) {
+                if (this.logger) {
+                  this.logger.error(error as string);
+                }
+              }
+
+              await this.seenChecker.add(post.id);
+              await sleep(this.sleepPeriod);
+            }
           }
         }
+      }
+    } catch (error) {
+      if (this.logger) {
+        this.logger.error(error as string);
       }
     }
   };
@@ -168,42 +197,15 @@ export class Discuit {
     return await this.fetcher
       .request<{ posts: Post[] }>('GET', `/posts?sort=${sort}&limit=${limit}`)
       .then((res) => {
+        if (!res) {
+          if (this.logger) {
+            this.logger.debug(`Got null response from /posts`);
+          }
+
+          return [];
+        }
+
         return res.data.posts;
       });
-  };
-
-  /**
-   * Fetches a csrf token from the server.
-   *
-   * Also stores the token internally for future requests.
-   */
-  public getToken = async (): Promise<string | null> => {
-    if (this.logger) {
-      this.logger.debug(`Making GET request to /_initial`);
-    }
-
-    return await this.fetcher.request<string | null>('GET', '/_initial').then((res) => {
-      return this.formatToken(res.headers['csrf-token']);
-    });
-  };
-
-  /**
-   * Formats a csrf token.
-   *
-   * @param token The token to format.
-   */
-  private formatToken = (token: HeaderValue): string => {
-    if (!token) {
-      return '';
-    }
-
-    if (Array.isArray(token)) {
-      return token[0];
-    }
-    if (typeof token === 'number') {
-      return token.toString();
-    }
-
-    return token.toString();
   };
 }

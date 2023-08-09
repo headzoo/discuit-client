@@ -7,7 +7,7 @@ yarn add @headz/discuit
 ```
 
 ## Usage
-```js
+```typescript
 import { Discuit } from '@headz/discuit';
 
 const discuit = new Discuit();
@@ -22,7 +22,7 @@ for (let i = 0; i < posts.length; i++) {
 ```
 
 Using the watch method.
-```js
+```typescript
 import { Discuit } from '@headz/discuit';
 
 const communities = ['news', 'politics', 'sports'];
@@ -36,4 +36,24 @@ discuit.watch(communities, async (community, post) => {
 
   await discuit.comment(post.id, 'Welcome to the community!');
 });
+```
+
+Attaching a logger.
+```typescript
+import { Discuit } from '@headz/discuit';
+import winston from 'winston';
+
+const logger = winston.createLogger({
+    level: 'debug',
+    format: winston.format.json(),
+    defaultMeta: { service: 'discuit' },
+    transports: [
+        new winston.transports.Console({
+            format: winston.format.simple(),
+        })
+    ],
+});
+
+const discuit = new Discuit();
+discuit.logger = logger;
 ```
