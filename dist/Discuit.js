@@ -98,6 +98,9 @@ class Discuit {
          */
         this.watchLoop = () => __awaiter(this, void 0, void 0, function* () {
             try {
+                if (this.logger) {
+                    this.logger.debug('Running watch loop.');
+                }
                 const recent = yield this.getPosts('latest', 50);
                 for (let i = 0; i < recent.length; i++) {
                     const post = recent[i];
