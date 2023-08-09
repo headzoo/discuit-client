@@ -123,6 +123,10 @@ export class Discuit {
    */
   protected watchLoop = async (): Promise<void> => {
     try {
+      if (this.logger) {
+        this.logger.debug('Running watch loop.');
+      }
+
       const recent = await this.getPosts('latest', 50);
       for (let i = 0; i < recent.length; i++) {
         const post = recent[i];
