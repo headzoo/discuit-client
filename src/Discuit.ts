@@ -215,6 +215,31 @@ export class Discuit {
   };
 
   /**
+   * Updates a comment.
+   *
+   * @param publicId The PUBLIC id of the post.
+   * @param commentId The comment id.
+   * @param body The comment body.
+   */
+  public updateComment = async (
+    publicId: string,
+    commentId: string,
+    body: string,
+  ): Promise<Comment | null> => {
+    if (!this.user) {
+      throw new Error('Not logged in');
+    }
+
+    return await this.fetcher
+      .request('PUT', `/posts/${publicId}/comments/${commentId}`, {
+        body,
+      })
+      .then((res) => {
+        return res?.data;
+      });
+  };
+
+  /**
    * Fetches the latest posts.
    *
    * @param sort How to sort the posts.
