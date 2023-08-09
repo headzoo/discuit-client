@@ -35,9 +35,14 @@ export class Discuit {
   protected watchers: Watcher[] = [];
 
   /**
+   * The timer used to run the watch loop.
+   */
+  private watchInterval: NodeJS.Timer | number;
+
+  /**
    * How often the client should check for new posts in the watched communities.
    */
-  public watchInterval: NodeJS.Timer | number = 1000 * 60 * 10; // 10 minutes
+  public watchTimeout: NodeJS.Timeout | number = 1000 * 60 * 10; // 10 minutes
 
   /**
    * How long to wait between callbacks in the watch loop.
@@ -111,8 +116,15 @@ export class Discuit {
     }
 
     if (!this.watchInterval) {
-      this.watchInterval = setInterval(this.watchLoop, this.watchInterval as number);
+      this.watchInterval = setInterval(this.watchLoop, this.watchTimeout as number);
+      if (this.logger) {
+        this.logger.debug(
+          `Watching ${communities.length} communities at interval ${this.watchInterval}`,
+        );
+      }
     }
+
+    // Automatically run the watch loop the first time this method is called.
     this.watchLoop().then();
   };
 

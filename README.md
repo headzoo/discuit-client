@@ -40,12 +40,15 @@ discuit.watch(communities, async (community, post) => {
 });
 ```
 
-Attaching a logger.
+Configuration
 ```typescript
 import { Discuit } from '@headz/discuit';
 import winston from 'winston';
 
-const logger = winston.createLogger({
+const discuit = new Discuit();
+
+// Attach a logger.
+discuit.logger = winston.createLogger({
     level: 'debug',
     format: winston.format.json(),
     defaultMeta: { service: 'discuit' },
@@ -56,6 +59,10 @@ const logger = winston.createLogger({
     ],
 });
 
-const discuit = new Discuit();
-discuit.logger = logger;
+// Configure how often the watch() command checks for new posts.
+// Don't set this too low or discuit will rate limit the bot.
+discuit.watchInterval = 1000 * 60 * 10 // 10 minutes
+
+// How long to wait between callbacks in the watch loop.
+discuit.sleepPeriod = 5000;
 ```

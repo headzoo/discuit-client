@@ -28,7 +28,7 @@ class Discuit {
         /**
          * How often the client should check for new posts in the watched communities.
          */
-        this.watchInterval = 1000 * 60 * 10; // 10 minutes
+        this.watchTimeout = 1000 * 60 * 10; // 10 minutes
         /**
          * How long to wait between callbacks in the watch loop.
          */
@@ -87,8 +87,12 @@ class Discuit {
                 }
             }
             if (!this.watchInterval) {
-                this.watchInterval = setInterval(this.watchLoop, this.watchInterval);
+                this.watchInterval = setInterval(this.watchLoop, this.watchTimeout);
+                if (this.logger) {
+                    this.logger.debug(`Watching ${communities.length} communities at interval ${this.watchInterval}`);
+                }
             }
+            // Automatically run the watch loop the first time this method is called.
             this.watchLoop().then();
         };
         /**

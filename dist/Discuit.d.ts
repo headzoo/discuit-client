@@ -27,9 +27,13 @@ export declare class Discuit {
      */
     protected watchers: Watcher[];
     /**
+     * The timer used to run the watch loop.
+     */
+    private watchInterval;
+    /**
      * How often the client should check for new posts in the watched communities.
      */
-    watchInterval: NodeJS.Timer | number;
+    watchTimeout: NodeJS.Timeout | number;
     /**
      * How long to wait between callbacks in the watch loop.
      */
