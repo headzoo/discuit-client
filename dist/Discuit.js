@@ -96,6 +96,16 @@ class Discuit {
             this.watchLoop().then();
         };
         /**
+         * Stops watching for new posts.
+         */
+        this.unwatch = () => {
+            this.watchers = [];
+            clearInterval(this.watchInterval);
+            if (this.logger) {
+                this.logger.debug('Watching stopped.');
+            }
+        };
+        /**
          * Callback for setInterval.
          *
          * Checks for new posts and calls the callbacks.

@@ -61,6 +61,10 @@ export declare class Discuit {
      */
     watch: (communities: string[], cb: (community: string, post: Post) => void) => void;
     /**
+     * Stops watching for new posts.
+     */
+    unwatch: () => void;
+    /**
      * Callback for setInterval.
      *
      * Checks for new posts and calls the callbacks.
