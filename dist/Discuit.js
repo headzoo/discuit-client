@@ -139,11 +139,11 @@ class Discuit {
         /**
          * Submits a comment.
          *
-         * @param publicId The public id of the post.
+         * @param publicId The PUBLIC id of the post.
          * @param body The comment body.
          * @param parentCommentId The id of the parent comment.
          */
-        this.comment = (publicId, body, parentCommentId = null) => __awaiter(this, void 0, void 0, function* () {
+        this.postComment = (publicId, body, parentCommentId = null) => __awaiter(this, void 0, void 0, function* () {
             if (!this.user) {
                 throw new Error('Not logged in');
             }
@@ -153,7 +153,43 @@ class Discuit {
                 parentCommentId,
             })
                 .then((res) => {
-                return res;
+                return res === null || res === void 0 ? void 0 : res.data;
+            });
+        });
+        /**
+         * Deletes a comment.
+         *
+         * @param postId The PRIVATE id of the post.
+         * @param commentId The comment id.
+         * @param as The user group to delete as.
+         */
+        this.deleteComment = (postId, commentId, as) => __awaiter(this, void 0, void 0, function* () {
+            if (!this.user) {
+                throw new Error('Not logged in');
+            }
+            return yield this.fetcher
+                .request('DELETE', `/posts/${postId}/comments/${commentId}?deleteAs=${as || 'normal'}`)
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Updates a comment.
+         *
+         * @param publicId The PUBLIC id of the post.
+         * @param commentId The comment id.
+         * @param body The comment body.
+         */
+        this.updateComment = (publicId, commentId, body) => __awaiter(this, void 0, void 0, function* () {
+            if (!this.user) {
+                throw new Error('Not logged in');
+            }
+            return yield this.fetcher
+                .request('PUT', `/posts/${publicId}/comments/${commentId}`, {
+                body,
+            })
+                .then((res) => {
+                return res === null || res === void 0 ? void 0 : res.data;
             });
         });
         /**

@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { PostSort, Post, User, ISeenChecker, IFetch } from './types';
+import { PostSort, Post, User, ISeenChecker, IFetch, UserGroups, Comment } from './types';
 import { ILogger } from './ILogger';
 export type WatchCallback = (community: string, post: Post) => void;
 export interface Watcher {
@@ -65,11 +65,27 @@ export declare class Discuit {
     /**
      * Submits a comment.
      *
-     * @param publicId The public id of the post.
+     * @param publicId The PUBLIC id of the post.
      * @param body The comment body.
      * @param parentCommentId The id of the parent comment.
      */
-    comment: (publicId: string, body: string, parentCommentId?: string | null) => Promise<any>;
+    postComment: (publicId: string, body: string, parentCommentId?: string | null) => Promise<Comment | null>;
+    /**
+     * Deletes a comment.
+     *
+     * @param postId The PRIVATE id of the post.
+     * @param commentId The comment id.
+     * @param as The user group to delete as.
+     */
+    deleteComment: (postId: string, commentId: string, as?: UserGroups) => Promise<boolean>;
+    /**
+     * Updates a comment.
+     *
+     * @param publicId The PUBLIC id of the post.
+     * @param commentId The comment id.
+     * @param body The comment body.
+     */
+    updateComment: (publicId: string, commentId: string, body: string) => Promise<Comment | null>;
     /**
      * Fetches the latest posts.
      *
