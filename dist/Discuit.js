@@ -221,19 +221,87 @@ class Discuit {
         });
         /**
          * Returns all the user's notifications.
+         *
+         * @param next The next page of notifications.
          */
-        this.getNotifications = () => __awaiter(this, void 0, void 0, function* () {
+        this.getNotifications = (next) => __awaiter(this, void 0, void 0, function* () {
             this.authCheck();
             return yield this.fetcher
-                .request('GET', `/notifications`)
+                .request('GET', `/notifications${next ? `?next=${next}` : ''}`)
                 .then((res) => {
                 if (!res) {
                     if (this.logger) {
                         this.logger.debug(`Got null response from /notifications`);
                     }
-                    return [];
+                    return {
+                        count: 0,
+                        newCount: 0,
+                        next: '',
+                        items: [],
+                    };
                 }
-                return res.data.items;
+                return res.data;
+            });
+        });
+        /**
+         * Returns all notifications for the logged in user.
+         *
+         * @param maxNexts Max number of times to fetch the next page.
+         */
+        this.getAllNotifications = (maxNexts = 3) => __awaiter(this, void 0, void 0, function* () {
+            const notifications = [];
+            let next = undefined;
+            let counter = 0;
+            do {
+                const res = yield this.getNotifications(next);
+                notifications.push(...res.items);
+                next = res.next;
+                counter++;
+            } while (next && counter < maxNexts);
+            return notifications;
+        });
+        /**
+         * Marks a notification as seen.
+         *
+         * @param id The notification id.
+         */
+        this.markNotificationAsSeen = (id) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('PUT', `/notifications/${id}?action=markAsSeen&seen=true`)
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Marks all notifications as seen.
+         */
+        this.markAllNotificationsAsSeen = () => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('POST', `/notifications?action=markAllAsSeen&type=`) // Not sure why "type" is empty
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Deletes a notification
+         *
+         * @param id The notification id.
+         */
+        this.deleteNotification = (id) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher.request('DELETE', `/notifications/${id}`).then(() => {
+                return true;
+            });
+        });
+        /**
+         * Deletes all notifications.
+         */
+        this.deleteAllNotifications = () => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher.request('POST', `/notifications?action=deleteAll`).then(() => {
+                return true;
             });
         });
         /**

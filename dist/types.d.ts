@@ -102,8 +102,11 @@ export interface Notification {
     notif: {
         comment?: Comment;
         post: Post;
-        targetId: string;
-        targetType: string;
+        postId: string;
+        targetId?: string;
+        targetType?: string;
+        commentAuthor?: string;
+        commentId?: string;
     };
 }
 /**

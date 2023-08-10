@@ -289,23 +289,107 @@ export class Discuit {
 
   /**
    * Returns all the user's notifications.
+   *
+   * @param next The next page of notifications.
    */
-  public getNotifications = async (): Promise<Notification[]> => {
+  public getNotifications = async (
+    next?: string,
+  ): Promise<{ count: number; newCount: number; next: string; items: Notification[] }> => {
     this.authCheck();
 
     return await this.fetcher
-      .request<{ items: Notification[] }>('GET', `/notifications`)
+      .request<{ count: number; newCount: number; next: string; items: Notification[] }>(
+        'GET',
+        `/notifications${next ? `?next=${next}` : ''}`,
+      )
       .then((res) => {
         if (!res) {
           if (this.logger) {
             this.logger.debug(`Got null response from /notifications`);
           }
 
-          return [];
+          return {
+            count: 0,
+            newCount: 0,
+            next: '',
+            items: [],
+          };
         }
 
-        return res.data.items;
+        return res.data;
       });
+  };
+
+  /**
+   * Returns all notifications for the logged in user.
+   *
+   * @param maxNexts Max number of times to fetch the next page.
+   */
+  public getAllNotifications = async (maxNexts: number = 3): Promise<Notification[]> => {
+    const notifications: Notification[] = [];
+    let next: string | undefined = undefined;
+    let counter = 0;
+
+    do {
+      const res = await this.getNotifications(next);
+      notifications.push(...res.items);
+      next = res.next;
+      counter++;
+    } while (next && counter < maxNexts);
+
+    return notifications;
+  };
+
+  /**
+   * Marks a notification as seen.
+   *
+   * @param id The notification id.
+   */
+  public markNotificationAsSeen = async (id: string): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request('PUT', `/notifications/${id}?action=markAsSeen&seen=true`)
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
+   * Marks all notifications as seen.
+   */
+  public markAllNotificationsAsSeen = async (): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request('POST', `/notifications?action=markAllAsSeen&type=`) // Not sure why "type" is empty
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
+   * Deletes a notification
+   *
+   * @param id The notification id.
+   */
+  public deleteNotification = async (id: string): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher.request('DELETE', `/notifications/${id}`).then(() => {
+      return true;
+    });
+  };
+
+  /**
+   * Deletes all notifications.
+   */
+  public deleteAllNotifications = async (): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher.request('POST', `/notifications?action=deleteAll`).then(() => {
+      return true;
+    });
   };
 
   /**

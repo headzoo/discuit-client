@@ -103,8 +103,41 @@ export declare class Discuit {
     getPosts: (sort?: PostSort, limit?: number) => Promise<Post[]>;
     /**
      * Returns all the user's notifications.
+     *
+     * @param next The next page of notifications.
      */
-    getNotifications: () => Promise<Notification[]>;
+    getNotifications: (next?: string) => Promise<{
+        count: number;
+        newCount: number;
+        next: string;
+        items: Notification[];
+    }>;
+    /**
+     * Returns all notifications for the logged in user.
+     *
+     * @param maxNexts Max number of times to fetch the next page.
+     */
+    getAllNotifications: (maxNexts?: number) => Promise<Notification[]>;
+    /**
+     * Marks a notification as seen.
+     *
+     * @param id The notification id.
+     */
+    markNotificationAsSeen: (id: string) => Promise<boolean>;
+    /**
+     * Marks all notifications as seen.
+     */
+    markAllNotificationsAsSeen: () => Promise<boolean>;
+    /**
+     * Deletes a notification
+     *
+     * @param id The notification id.
+     */
+    deleteNotification: (id: string) => Promise<boolean>;
+    /**
+     * Deletes all notifications.
+     */
+    deleteAllNotifications: () => Promise<boolean>;
     /**
      * Throws an exception if the lib isn't authenticated.
      */

@@ -24,6 +24,14 @@ for (let i = 0; i < posts.length; i++) {
 // Get the user's notifications.
 const notifications = await discuit.getNotifications();
 console.log(notifications);
+
+for (let i = 0; i < notifications.length; i++) {
+  const notification = notifications[i];
+  await discuit.markNotificationAsSeen(notification.id);
+  await discuit.deleteNotification(notification.id);
+}
+
+await discuit.deleteAllNotifications();
 ```
 
 Using the watch method.
