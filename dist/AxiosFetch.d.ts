@@ -48,4 +48,8 @@ export declare class AxiosFetch implements IFetch {
      * @param token The token to format.
      */
     private formatToken;
+    /**
+     * Returns a boolean indicating whether the code is being run in a browser.
+     */
+    private isBrowser;
 }

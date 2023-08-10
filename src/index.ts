@@ -4,6 +4,7 @@ export type {
   UserGroups,
   Post,
   Comment,
+  Notification,
   User,
   ISeenChecker,
   IFetch,

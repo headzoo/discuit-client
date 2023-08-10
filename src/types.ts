@@ -92,6 +92,28 @@ export interface Comment {
 }
 
 /**
+ * The types of notifications.
+ */
+export type NotificationType = 'new_votes' | 'new_comment';
+
+/**
+ * Represents the types of notifications.
+ */
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  seen: boolean;
+  seenAt: string | null;
+  createdAt: string;
+  notif: {
+    comment?: Comment;
+    post: Post;
+    targetId: string;
+    targetType: string;
+  };
+}
+
+/**
  * Represents a user.
  */
 export interface User {

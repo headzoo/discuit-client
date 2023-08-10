@@ -158,9 +158,7 @@ class Discuit {
          * @param parentCommentId The id of the parent comment.
          */
         this.postComment = (publicId, body, parentCommentId = null) => __awaiter(this, void 0, void 0, function* () {
-            if (!this.user) {
-                throw new Error('Not logged in');
-            }
+            this.authCheck();
             return yield this.fetcher
                 .request('POST', `/posts/${publicId}/comments?userGroup=normal`, {
                 body,
@@ -178,9 +176,7 @@ class Discuit {
          * @param as The user group to delete as.
          */
         this.deleteComment = (postId, commentId, as) => __awaiter(this, void 0, void 0, function* () {
-            if (!this.user) {
-                throw new Error('Not logged in');
-            }
+            this.authCheck();
             return yield this.fetcher
                 .request('DELETE', `/posts/${postId}/comments/${commentId}?deleteAs=${as || 'normal'}`)
                 .then(() => {
@@ -195,9 +191,7 @@ class Discuit {
          * @param body The comment body.
          */
         this.updateComment = (publicId, commentId, body) => __awaiter(this, void 0, void 0, function* () {
-            if (!this.user) {
-                throw new Error('Not logged in');
-            }
+            this.authCheck();
             return yield this.fetcher
                 .request('PUT', `/posts/${publicId}/comments/${commentId}`, {
                 body,
@@ -225,6 +219,35 @@ class Discuit {
                 return res.data.posts;
             });
         });
+        /**
+         * Returns all the user's notifications.
+         */
+        this.getNotifications = () => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('GET', `/notifications`)
+                .then((res) => {
+                if (!res) {
+                    if (this.logger) {
+                        this.logger.debug(`Got null response from /notifications`);
+                    }
+                    return [];
+                }
+                return res.data.items;
+            });
+        });
+        /**
+         * Throws an exception if the lib isn't authenticated.
+         */
+        this.authCheck = () => {
+            if (!this.isBrowser() && !this.user) {
+                throw new Error('Not authenticated. Must login first.');
+            }
+        };
+        /**
+         * Returns a boolean indicating whether the code is being run in a browser.
+         */
+        this.isBrowser = () => typeof window !== 'undefined' && typeof window.document !== 'undefined';
         this.fetcher = new AxiosFetch_1.AxiosFetch(this.logger);
     }
 }

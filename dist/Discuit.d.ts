@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { PostSort, Post, User, ISeenChecker, IFetch, UserGroups, Comment } from './types';
+import { PostSort, Post, User, Notification, ISeenChecker, IFetch, UserGroups, Comment } from './types';
 import { ILogger } from './ILogger';
 export type WatchCallback = (community: string, post: Post) => void;
 export interface Watcher {
@@ -101,4 +101,16 @@ export declare class Discuit {
      * @param limit The number of posts to fetch
      */
     getPosts: (sort?: PostSort, limit?: number) => Promise<Post[]>;
+    /**
+     * Returns all the user's notifications.
+     */
+    getNotifications: () => Promise<Notification[]>;
+    /**
+     * Throws an exception if the lib isn't authenticated.
+     */
+    private authCheck;
+    /**
+     * Returns a boolean indicating whether the code is being run in a browser.
+     */
+    private isBrowser;
 }

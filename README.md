@@ -20,6 +20,10 @@ for (let i = 0; i < posts.length; i++) {
   const comment = await discuit.postComment(post.id, 'Welcome to the community!');
   await discuit.deleteComment(comment.postId, comment.id);
 }
+
+// Get the user's notifications.
+const notifications = await discuit.getNotifications();
+console.log(notifications);
 ```
 
 Using the watch method.

@@ -1,4 +1,13 @@
-import { PostSort, Post, User, ISeenChecker, IFetch, UserGroups, Comment } from './types';
+import {
+  PostSort,
+  Post,
+  User,
+  Notification,
+  ISeenChecker,
+  IFetch,
+  UserGroups,
+  Comment,
+} from './types';
 import { MemorySeenChecker } from './MemorySeenChecker';
 import { AxiosFetch } from './AxiosFetch';
 import { ILogger } from './ILogger';
@@ -200,9 +209,7 @@ export class Discuit {
     body: string,
     parentCommentId: string | null = null,
   ): Promise<Comment | null> => {
-    if (!this.user) {
-      throw new Error('Not logged in');
-    }
+    this.authCheck();
 
     return await this.fetcher
       .request('POST', `/posts/${publicId}/comments?userGroup=normal`, {
@@ -226,9 +233,7 @@ export class Discuit {
     commentId: string,
     as?: UserGroups,
   ): Promise<boolean> => {
-    if (!this.user) {
-      throw new Error('Not logged in');
-    }
+    this.authCheck();
 
     return await this.fetcher
       .request('DELETE', `/posts/${postId}/comments/${commentId}?deleteAs=${as || 'normal'}`)
@@ -249,9 +254,7 @@ export class Discuit {
     commentId: string,
     body: string,
   ): Promise<Comment | null> => {
-    if (!this.user) {
-      throw new Error('Not logged in');
-    }
+    this.authCheck();
 
     return await this.fetcher
       .request('PUT', `/posts/${publicId}/comments/${commentId}`, {
@@ -283,4 +286,39 @@ export class Discuit {
         return res.data.posts;
       });
   };
+
+  /**
+   * Returns all the user's notifications.
+   */
+  public getNotifications = async (): Promise<Notification[]> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request<{ items: Notification[] }>('GET', `/notifications`)
+      .then((res) => {
+        if (!res) {
+          if (this.logger) {
+            this.logger.debug(`Got null response from /notifications`);
+          }
+
+          return [];
+        }
+
+        return res.data.items;
+      });
+  };
+
+  /**
+   * Throws an exception if the lib isn't authenticated.
+   */
+  private authCheck = () => {
+    if (!this.isBrowser() && !this.user) {
+      throw new Error('Not authenticated. Must login first.');
+    }
+  };
+
+  /**
+   * Returns a boolean indicating whether the code is being run in a browser.
+   */
+  private isBrowser = () => typeof window !== 'undefined' && typeof window.document !== 'undefined';
 }

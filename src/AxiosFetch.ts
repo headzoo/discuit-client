@@ -32,13 +32,16 @@ export class AxiosFetch implements IFetch {
    * @param logger a logger that will be used to log messages.
    */
   constructor(public logger: ILogger | null) {
+    const headers: HeadersInit = {};
+    if (!this.isBrowser()) {
+      headers['Referer'] = 'https://discuit.net/';
+      headers['User-Agent'] =
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36';
+    }
+
     this.axiosInstance = axios.create({
       baseURL: AxiosFetch.baseURL,
-      headers: {
-        Referer: 'https://discuit.net/',
-        'User-Agent':
-          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-      },
+      headers,
     });
   }
 
@@ -159,4 +162,9 @@ export class AxiosFetch implements IFetch {
 
     return token.toString();
   };
+
+  /**
+   * Returns a boolean indicating whether the code is being run in a browser.
+   */
+  private isBrowser = () => typeof window !== 'undefined' && typeof window.document !== 'undefined';
 }
