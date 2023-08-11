@@ -31,7 +31,7 @@ export class Discuit {
   /**
    * Makes the HTTP requests to the api.
    */
-  public readonly fetcher: IFetch;
+  public fetcher: IFetch;
 
   /**
    * The authenticated user.
@@ -66,8 +66,8 @@ export class Discuit {
   /**
    * Constructor
    */
-  constructor() {
-    this.fetcher = new AxiosFetch(this.logger);
+  constructor(fetcher?: IFetch) {
+    this.fetcher = fetcher || new AxiosFetch(this.logger);
   }
 
   /**
@@ -321,7 +321,7 @@ export class Discuit {
   };
 
   /**
-   * Returns all notifications for the logged in user.
+   * Returns all notifications for the logged-in user.
    *
    * @param maxNexts Max number of times to fetch the next page.
    */

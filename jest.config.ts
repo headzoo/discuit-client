@@ -66,7 +66,7 @@ const config: Config = {
   // A path to a module which exports an async function that is triggered once after all test suites
   // globalTeardown: undefined,
 
-  extensionsToTreatAsEsm: ['.mts'],
+  extensionsToTreatAsEsm: ['.ts'],
 
   // A set of global variables that need to be available in all test environments
   globals: {
@@ -84,7 +84,7 @@ const config: Config = {
   // ],
 
   // An array of file extensions your modules use
-  moduleFileExtensions: ['js', 'mts'],
+  moduleFileExtensions: ['js', 'ts'],
 
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
   moduleNameMapper: {
@@ -154,7 +154,7 @@ const config: Config = {
   // testLocationInResults: false,
 
   // The glob patterns Jest uses to detect test files
-  testMatch: ['**/__tests__/*.(m)ts'],
+  // testMatch: ['**/__tests__/*.(m)ts'],
 
   // An array of regexp pattern strings that are matched against all test paths, matched __tests__ are skipped
   // testPathIgnorePatterns: [
@@ -172,7 +172,12 @@ const config: Config = {
 
   // A map from regular expressions to paths to transformers
   transform: {
-    '^.+\\mts?$': 'ts-jest', // transpile both `ts` + `js` files
+    '^.+\\.(mt|t|cj|j)s$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ], // transpile both `ts` + `js` files
   },
 
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
