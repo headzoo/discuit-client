@@ -3,6 +3,8 @@ export type {
   PostSort,
   UserGroups,
   Post,
+  Community,
+  CommunityRule,
   Comment,
   Notification,
   User,

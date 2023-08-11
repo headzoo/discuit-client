@@ -3,30 +3,70 @@
  */
 export type PostSort = 'hot' | 'latest' | 'activity' | 'day' | 'week' | 'month' | 'year';
 /**
+ * The type of post.
+ */
+export type PostType = 'link';
+/**
  * Not real sure what this is.
  */
 export type UserGroups = 'normal' | 'moderator' | 'admin';
+/**
+ * Represents an image.
+ */
+export interface Image {
+    url: string;
+    averageColor: string;
+    height: number;
+    width: number;
+    mimetype: string;
+    size: number;
+    copies: any[];
+}
+/**
+ * Represents a community rule.
+ */
+export interface CommunityRule {
+    id: number;
+    communityId: string;
+    createdAt: string;
+    createdBy: string;
+    description: string;
+    rule: string;
+    zIndex: number;
+}
+/**
+ * The details of a community.
+ */
+export interface Community {
+    id: string;
+    about: string;
+    bannerImage: Image;
+    createdAt: string;
+    deletedAt: string | null;
+    mods: User[];
+    name: string;
+    noMembers: number;
+    nsfw: boolean;
+    proPic?: Image;
+    rules: CommunityRule[];
+    userId: string;
+    userJoined: boolean;
+    userMod: boolean;
+}
 /**
  * Represents a post link.
  */
 export interface Link {
     url: string;
     hostname: string;
-    image: {
-        mimetype: string;
-        width: number;
-        height: number;
-        size: number;
-        averageColor: string;
-        url: string;
-    };
+    image: Image;
 }
 /**
  * Represents a post.
  */
 export interface Post {
     id: string;
-    type: string;
+    type: PostType;
     publicId: string;
     postPublicId: string;
     userId: string;
@@ -34,10 +74,11 @@ export interface Post {
     userGroup: string;
     userDeleted: boolean;
     isPinned: boolean;
+    community?: Community;
     communityId: string;
     communityName: string;
-    communityProPic: any;
-    communityBannerImage: any;
+    communityProPic?: Image;
+    communityBannerImage?: Image;
     title: string;
     body: string | null;
     link: Link | null;
@@ -57,6 +98,7 @@ export interface Post {
     commentsNext: string;
     userVoted: boolean;
     userVotedUp: boolean;
+    comments?: Comment[];
 }
 /**
  * Represents a comment.

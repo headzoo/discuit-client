@@ -13,10 +13,30 @@ import { AxiosFetch } from './AxiosFetch';
 import { ILogger } from './ILogger';
 import { sleep } from './utils';
 
-export type WatchCallback = (community: string, post: Post) => void;
-export interface Watcher {
+/**
+ * Callback given to the watchPosts() method.
+ */
+export type WatchPostsCallback = (community: string, post: Post) => void;
+
+/**
+ * Represents a post watcher.
+ */
+export interface PostWatcher {
   community: string;
-  callbacks: WatchCallback[];
+  callbacks: WatchPostsCallback[];
+}
+
+/**
+ * Callback given to the watchComments() method.
+ */
+export type WatchCommentsCallback = (community: string, comment: Comment) => void;
+
+/**
+ * Represents a comment watcher.
+ */
+export interface CommentWatcher {
+  community: string;
+  callbacks: WatchCommentsCallback[];
 }
 
 /**
@@ -39,19 +59,34 @@ export class Discuit {
   public user: User | null;
 
   /**
-   * Communities being watched.
+   * Community posts being watched.
    */
-  protected watchers: Watcher[] = [];
+  protected watchersPosts: PostWatcher[] = [];
 
   /**
-   * The timer used to run the watch loop.
+   * Community comments being watched.
    */
-  private watchInterval: NodeJS.Timer | number;
+  protected watchersComments: CommentWatcher[] = [];
+
+  /**
+   * The timer used to run the watch posts loop.
+   */
+  private watchPostsInterval: NodeJS.Timer | number;
+
+  /**
+   * The timer used to run the watch comments loop.
+   */
+  protected watchCommentsInterval: NodeJS.Timer | number;
 
   /**
    * How often the client should check for new posts in the watched communities.
    */
   public watchTimeout: NodeJS.Timeout | number = 1000 * 60 * 10; // 10 minutes
+
+  /**
+   * How often the client should check for new comments in the watched communities.
+   */
+  public watchCommentsTimeout: NodeJS.Timeout | number = 1000 * 60 * 10; // 10 minutes
 
   /**
    * How long to wait between callbacks in the watch loop.
@@ -112,37 +147,37 @@ export class Discuit {
    * @param communities The communities to watch.
    * @param cb The callback.
    */
-  public watch = (communities: string[], cb: (community: string, post: Post) => void): void => {
+  public watchPosts = (communities: string[], cb: WatchPostsCallback): void => {
     for (let i = 0; i < communities.length; i++) {
       const community = communities[i].toLowerCase();
 
-      const found = this.watchers.find((w) => w.community === community);
+      const found = this.watchersPosts.find((w) => w.community === community);
       if (found) {
         found.callbacks.push(cb);
       } else {
-        this.watchers.push({ community, callbacks: [cb] });
+        this.watchersPosts.push({ community, callbacks: [cb] });
       }
     }
 
-    if (!this.watchInterval) {
-      this.watchInterval = setInterval(this.watchLoop, this.watchTimeout as number);
+    if (!this.watchPostsInterval) {
+      this.watchPostsInterval = setInterval(this.watchPostsLoop, this.watchTimeout as number);
       if (this.logger) {
         this.logger.debug(
-          `Watching ${communities.length} communities at interval ${this.watchInterval}`,
+          `Watching ${communities.length} communities at interval ${this.watchPostsInterval}`,
         );
       }
     }
 
     // Automatically run the watch loop the first time this method is called.
-    this.watchLoop().then();
+    this.watchPostsLoop().then();
   };
 
   /**
    * Stops watching for new posts.
    */
-  public unwatch = (): void => {
-    this.watchers = [];
-    clearInterval(this.watchInterval);
+  public unwatchPosts = (): void => {
+    this.watchersPosts = [];
+    clearInterval(this.watchPostsInterval);
     if (this.logger) {
       this.logger.debug('Watching stopped.');
     }
@@ -153,7 +188,7 @@ export class Discuit {
    *
    * Checks for new posts and calls the callbacks.
    */
-  protected watchLoop = async (): Promise<void> => {
+  protected watchPostsLoop = async (): Promise<void> => {
     try {
       if (this.logger) {
         this.logger.debug('Running watch loop.');
@@ -164,15 +199,15 @@ export class Discuit {
         const post = recent[i];
 
         // Have we already seen this?
-        if (await this.seenChecker.isSeen(post.id)) {
+        if (await this.seenChecker.isSeen(`post-${post.id}`)) {
           if (this.logger) {
             this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
           }
           continue;
         }
 
-        for (let j = 0; j < this.watchers.length; j++) {
-          const watcher = this.watchers[j];
+        for (let j = 0; j < this.watchersPosts.length; j++) {
+          const watcher = this.watchersPosts[j];
 
           if (watcher.community === post.communityName.toLowerCase()) {
             for (let k = 0; k < watcher.callbacks.length; k++) {
@@ -184,7 +219,7 @@ export class Discuit {
                 }
               }
 
-              await this.seenChecker.add(post.id);
+              await this.seenChecker.add(`post-${post.id}`);
               await sleep(this.sleepPeriod);
             }
           }
@@ -195,6 +230,58 @@ export class Discuit {
         this.logger.error(error as string);
       }
     }
+  };
+
+  /**
+   * Watches for new comments.
+   *
+   * @param communities The communities to watch.
+   * @param cb The callback.
+   */
+  public watchComments = (communities: string[], cb: WatchCommentsCallback): void => {
+    for (let i = 0; i < communities.length; i++) {
+      const community = communities[i].toLowerCase();
+
+      const found = this.watchersComments.find((w) => w.community === community);
+      if (found) {
+        found.callbacks.push(cb);
+      } else {
+        this.watchersComments.push({ community, callbacks: [cb] });
+      }
+    }
+
+    if (!this.watchCommentsInterval) {
+      this.watchCommentsInterval = setInterval(
+        this.watchCommentsLoop,
+        this.watchCommentsTimeout as number,
+      );
+      if (this.logger) {
+        this.logger.debug(
+          `Watching ${communities.length} communities at interval ${this.watchCommentsInterval}`,
+        );
+      }
+    }
+
+    // Automatically run the watch loop the first time this method is called.
+    this.watchCommentsLoop().then();
+  };
+
+  /**
+   * Callback for setInterval.
+   *
+   * Checks for new comments and calls the callbacks.
+   */
+  private watchCommentsLoop = async (): Promise<void> => {};
+
+  /**
+   * Returns the comment with the given id.
+   *
+   * @param id The comment id.
+   */
+  public getComment = async (id: string): Promise<Comment | null> => {
+    return await this.fetcher.request('GET', `/comments/${id}`).then((res) => {
+      return res?.data;
+    });
   };
 
   /**
@@ -263,6 +350,25 @@ export class Discuit {
       .then((res) => {
         return res?.data;
       });
+  };
+
+  /**
+   * Returns the details of a post.
+   *
+   * @param publicId The PUBLIC id of the post.
+   */
+  public getPost = async (publicId: string): Promise<Post | null> => {
+    return await this.fetcher.request<Post>('GET', `/posts/${publicId}`).then((res) => {
+      if (!res) {
+        if (this.logger) {
+          this.logger.debug(`Got null response from /posts`);
+        }
+
+        return null;
+      }
+
+      return res.data;
+    });
   };
 
   /**

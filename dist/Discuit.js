@@ -20,15 +20,23 @@ class Discuit {
     /**
      * Constructor
      */
-    constructor() {
+    constructor(fetcher) {
         /**
-         * Communities being watched.
+         * Community posts being watched.
          */
-        this.watchers = [];
+        this.watchersPosts = [];
+        /**
+         * Community comments being watched.
+         */
+        this.watchersComments = [];
         /**
          * How often the client should check for new posts in the watched communities.
          */
         this.watchTimeout = 1000 * 60 * 10; // 10 minutes
+        /**
+         * How often the client should check for new comments in the watched communities.
+         */
+        this.watchCommentsTimeout = 1000 * 60 * 10; // 10 minutes
         /**
          * How long to wait between callbacks in the watch loop.
          */
@@ -75,32 +83,32 @@ class Discuit {
          * @param communities The communities to watch.
          * @param cb The callback.
          */
-        this.watch = (communities, cb) => {
+        this.watchPosts = (communities, cb) => {
             for (let i = 0; i < communities.length; i++) {
                 const community = communities[i].toLowerCase();
-                const found = this.watchers.find((w) => w.community === community);
+                const found = this.watchersPosts.find((w) => w.community === community);
                 if (found) {
                     found.callbacks.push(cb);
                 }
                 else {
-                    this.watchers.push({ community, callbacks: [cb] });
+                    this.watchersPosts.push({ community, callbacks: [cb] });
                 }
             }
-            if (!this.watchInterval) {
-                this.watchInterval = setInterval(this.watchLoop, this.watchTimeout);
+            if (!this.watchPostsInterval) {
+                this.watchPostsInterval = setInterval(this.watchPostsLoop, this.watchTimeout);
                 if (this.logger) {
-                    this.logger.debug(`Watching ${communities.length} communities at interval ${this.watchInterval}`);
+                    this.logger.debug(`Watching ${communities.length} communities at interval ${this.watchPostsInterval}`);
                 }
             }
             // Automatically run the watch loop the first time this method is called.
-            this.watchLoop().then();
+            this.watchPostsLoop().then();
         };
         /**
          * Stops watching for new posts.
          */
-        this.unwatch = () => {
-            this.watchers = [];
-            clearInterval(this.watchInterval);
+        this.unwatchPosts = () => {
+            this.watchersPosts = [];
+            clearInterval(this.watchPostsInterval);
             if (this.logger) {
                 this.logger.debug('Watching stopped.');
             }
@@ -110,7 +118,7 @@ class Discuit {
          *
          * Checks for new posts and calls the callbacks.
          */
-        this.watchLoop = () => __awaiter(this, void 0, void 0, function* () {
+        this.watchPostsLoop = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 if (this.logger) {
                     this.logger.debug('Running watch loop.');
@@ -119,14 +127,14 @@ class Discuit {
                 for (let i = 0; i < recent.length; i++) {
                     const post = recent[i];
                     // Have we already seen this?
-                    if (yield this.seenChecker.isSeen(post.id)) {
+                    if (yield this.seenChecker.isSeen(`post-${post.id}`)) {
                         if (this.logger) {
                             this.logger.debug(`Skipping post ${post.id} because it has already been seen`);
                         }
                         continue;
                     }
-                    for (let j = 0; j < this.watchers.length; j++) {
-                        const watcher = this.watchers[j];
+                    for (let j = 0; j < this.watchersPosts.length; j++) {
+                        const watcher = this.watchersPosts[j];
                         if (watcher.community === post.communityName.toLowerCase()) {
                             for (let k = 0; k < watcher.callbacks.length; k++) {
                                 try {
@@ -137,7 +145,7 @@ class Discuit {
                                         this.logger.error(error);
                                     }
                                 }
-                                yield this.seenChecker.add(post.id);
+                                yield this.seenChecker.add(`post-${post.id}`);
                                 yield (0, utils_1.sleep)(this.sleepPeriod);
                             }
                         }
@@ -149,6 +157,48 @@ class Discuit {
                     this.logger.error(error);
                 }
             }
+        });
+        /**
+         * Watches for new comments.
+         *
+         * @param communities The communities to watch.
+         * @param cb The callback.
+         */
+        this.watchComments = (communities, cb) => {
+            for (let i = 0; i < communities.length; i++) {
+                const community = communities[i].toLowerCase();
+                const found = this.watchersComments.find((w) => w.community === community);
+                if (found) {
+                    found.callbacks.push(cb);
+                }
+                else {
+                    this.watchersComments.push({ community, callbacks: [cb] });
+                }
+            }
+            if (!this.watchCommentsInterval) {
+                this.watchCommentsInterval = setInterval(this.watchCommentsLoop, this.watchCommentsTimeout);
+                if (this.logger) {
+                    this.logger.debug(`Watching ${communities.length} communities at interval ${this.watchCommentsInterval}`);
+                }
+            }
+            // Automatically run the watch loop the first time this method is called.
+            this.watchCommentsLoop().then();
+        };
+        /**
+         * Callback for setInterval.
+         *
+         * Checks for new comments and calls the callbacks.
+         */
+        this.watchCommentsLoop = () => __awaiter(this, void 0, void 0, function* () { });
+        /**
+         * Returns the comment with the given id.
+         *
+         * @param id The comment id.
+         */
+        this.getComment = (id) => __awaiter(this, void 0, void 0, function* () {
+            return yield this.fetcher.request('GET', `/comments/${id}`).then((res) => {
+                return res === null || res === void 0 ? void 0 : res.data;
+            });
         });
         /**
          * Submits a comment.
@@ -201,6 +251,22 @@ class Discuit {
             });
         });
         /**
+         * Returns the details of a post.
+         *
+         * @param publicId The PUBLIC id of the post.
+         */
+        this.getPost = (publicId) => __awaiter(this, void 0, void 0, function* () {
+            return yield this.fetcher.request('GET', `/posts/${publicId}`).then((res) => {
+                if (!res) {
+                    if (this.logger) {
+                        this.logger.debug(`Got null response from /posts`);
+                    }
+                    return null;
+                }
+                return res.data;
+            });
+        });
+        /**
          * Fetches the latest posts.
          *
          * @param sort How to sort the posts.
@@ -244,7 +310,7 @@ class Discuit {
             });
         });
         /**
-         * Returns all notifications for the logged in user.
+         * Returns all notifications for the logged-in user.
          *
          * @param maxNexts Max number of times to fetch the next page.
          */
@@ -316,7 +382,7 @@ class Discuit {
          * Returns a boolean indicating whether the code is being run in a browser.
          */
         this.isBrowser = () => typeof window !== 'undefined' && typeof window.document !== 'undefined';
-        this.fetcher = new AxiosFetch_1.AxiosFetch(this.logger);
+        this.fetcher = fetcher || new AxiosFetch_1.AxiosFetch(this.logger);
     }
 }
 exports.Discuit = Discuit;

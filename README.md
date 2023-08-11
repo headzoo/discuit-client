@@ -44,11 +44,15 @@ const discuit = new Discuit();
 await discuit.login(process.env.DISCUIT_USERNAME, process.env.DISCUIT_PASSWORD);
 
 // Watch for new posts in the communities.
-discuit.watch(communities, async (community, post) => {
+discuit.watchPosts(communities, async (community, post) => {
   console.log(community, post);
 
   const comment = await discuit.postComment(post.id, 'Welcome to the community!');
   await discuit.deleteComment(comment.postId, comment.id);
+});
+
+discuit.watchComments(communities, async (community, comment) => {
+    console.log(community, comment);
 });
 ```
 

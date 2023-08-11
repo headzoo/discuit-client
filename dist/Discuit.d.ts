@@ -1,10 +1,27 @@
 /// <reference types="node" />
 import { PostSort, Post, User, Notification, ISeenChecker, IFetch, UserGroups, Comment } from './types';
 import { ILogger } from './ILogger';
-export type WatchCallback = (community: string, post: Post) => void;
-export interface Watcher {
+/**
+ * Callback given to the watchPosts() method.
+ */
+export type WatchPostsCallback = (community: string, post: Post) => void;
+/**
+ * Represents a post watcher.
+ */
+export interface PostWatcher {
     community: string;
-    callbacks: WatchCallback[];
+    callbacks: WatchPostsCallback[];
+}
+/**
+ * Callback given to the watchComments() method.
+ */
+export type WatchCommentsCallback = (community: string, comment: Comment) => void;
+/**
+ * Represents a comment watcher.
+ */
+export interface CommentWatcher {
+    community: string;
+    callbacks: WatchCommentsCallback[];
 }
 /**
  * Represents a Discuit client.
@@ -17,23 +34,35 @@ export declare class Discuit {
     /**
      * Makes the HTTP requests to the api.
      */
-    readonly fetcher: IFetch;
+    fetcher: IFetch;
     /**
      * The authenticated user.
      */
     user: User | null;
     /**
-     * Communities being watched.
+     * Community posts being watched.
      */
-    protected watchers: Watcher[];
+    protected watchersPosts: PostWatcher[];
     /**
-     * The timer used to run the watch loop.
+     * Community comments being watched.
      */
-    private watchInterval;
+    protected watchersComments: CommentWatcher[];
+    /**
+     * The timer used to run the watch posts loop.
+     */
+    private watchPostsInterval;
+    /**
+     * The timer used to run the watch comments loop.
+     */
+    protected watchCommentsInterval: NodeJS.Timer | number;
     /**
      * How often the client should check for new posts in the watched communities.
      */
     watchTimeout: NodeJS.Timeout | number;
+    /**
+     * How often the client should check for new comments in the watched communities.
+     */
+    watchCommentsTimeout: NodeJS.Timeout | number;
     /**
      * How long to wait between callbacks in the watch loop.
      */
@@ -45,7 +74,7 @@ export declare class Discuit {
     /**
      * Constructor
      */
-    constructor();
+    constructor(fetcher?: IFetch);
     /**
      * Logs into the server.
      *
@@ -59,17 +88,36 @@ export declare class Discuit {
      * @param communities The communities to watch.
      * @param cb The callback.
      */
-    watch: (communities: string[], cb: (community: string, post: Post) => void) => void;
+    watchPosts: (communities: string[], cb: WatchPostsCallback) => void;
     /**
      * Stops watching for new posts.
      */
-    unwatch: () => void;
+    unwatchPosts: () => void;
     /**
      * Callback for setInterval.
      *
      * Checks for new posts and calls the callbacks.
      */
-    protected watchLoop: () => Promise<void>;
+    protected watchPostsLoop: () => Promise<void>;
+    /**
+     * Watches for new comments.
+     *
+     * @param communities The communities to watch.
+     * @param cb The callback.
+     */
+    watchComments: (communities: string[], cb: WatchCommentsCallback) => void;
+    /**
+     * Callback for setInterval.
+     *
+     * Checks for new comments and calls the callbacks.
+     */
+    private watchCommentsLoop;
+    /**
+     * Returns the comment with the given id.
+     *
+     * @param id The comment id.
+     */
+    getComment: (id: string) => Promise<Comment | null>;
     /**
      * Submits a comment.
      *
@@ -95,6 +143,12 @@ export declare class Discuit {
      */
     updateComment: (publicId: string, commentId: string, body: string) => Promise<Comment | null>;
     /**
+     * Returns the details of a post.
+     *
+     * @param publicId The PUBLIC id of the post.
+     */
+    getPost: (publicId: string) => Promise<Post | null>;
+    /**
      * Fetches the latest posts.
      *
      * @param sort How to sort the posts.
@@ -113,7 +167,7 @@ export declare class Discuit {
         items: Notification[];
     }>;
     /**
-     * Returns all notifications for the logged in user.
+     * Returns all notifications for the logged-in user.
      *
      * @param maxNexts Max number of times to fetch the next page.
      */
