@@ -450,20 +450,20 @@ export class Discuit {
    * Returns the comments for the given post.
    *
    * @param publicId The PUBLIC id of the post.
-   * @param parentId The id of the parent comment.
    * @param next The next page of comments.
+   * @param parentId The id of the parent comment.
    */
   public getPostComments = async (
     publicId: string,
-    parentId?: string,
     next?: string,
+    parentId?: string,
   ): Promise<{ comments: Comment[]; next: string }> => {
     let url = `/posts/${publicId}/comments`;
-    if (parentId) {
-      url += `${url.indexOf('?') === -1 ? '?' : '&'}parentId=${parentId}`;
-    }
     if (next) {
       url += `${url.indexOf('?') === -1 ? '?' : '&'}next=${next}`;
+    }
+    if (parentId) {
+      url += `${url.indexOf('?') === -1 ? '?' : '&'}parentId=${parentId}`;
     }
 
     return await this.fetcher.request<Comment[]>(`GET`, url).then((res) => {

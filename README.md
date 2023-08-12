@@ -151,7 +151,7 @@ Votes a post up or down and returns the post. If already voted, then changes the
 await discuit.votePost('12345', true);
 ```
 
-### getPostComments(publicId: string, parentId?: string, next?: string): Promise<{ comments: Comment[]; next: string }>
+### getPostComments(publicId: string, next?: string, parentId?: string): Promise<{ comments: Comment[]; next: string }>
 Returns the comments for the given post.
 
 ```typescript

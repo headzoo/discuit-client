@@ -1,11 +1,22 @@
 import { IFetch, FetchResponse, Method } from './types';
 
-type Callback = (body: any) => Promise<FetchResponse<any> | null>;
+export interface Request {
+  method: Method;
+  path: string;
+  body: any;
+}
+
+type Callback = (req: Request) => Promise<any>;
 
 /**
  * Fetcher used for testing.
  */
 export class TestingFetch implements IFetch {
+  /**
+   * Number of times the fetch method was called.
+   */
+  public requestCount = 0;
+
   /**
    * Constructor
    *
@@ -27,15 +38,23 @@ export class TestingFetch implements IFetch {
     path: string,
     body: any,
   ): Promise<FetchResponse<T> | null> => {
+    this.requestCount++;
+
+    const req = {
+      method,
+      path,
+      body,
+    };
+
     if (method === this.method && path === this.path) {
-      return await this.callback(body);
+      return {
+        statusCode: 200,
+        data: await this.callback(req),
+        headers: {},
+      };
     }
 
-    return Promise.resolve({
-      statusCode: 404,
-      data: {},
-      headers: {},
-    });
+    throw new Error(`Unexpected request: ${method} ${path}`);
   };
 
   /**
