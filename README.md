@@ -78,3 +78,87 @@ discuit.watchInterval = 1000 * 60 * 10 // 10 minutes
 // How long to wait between callbacks in the watch loop.
 discuit.sleepPeriod = 5000;
 ```
+
+## Methods
+The library is still in development, so the API is subject to change.
+
+### login(username: string, password: string): Promise<void>
+
+```typescript
+import { Discuit } from '@headz/discuit';
+
+const discuit = new Discuit();
+await discuit.login('DISCUIT_USERNAME', 'DISCUIT_PASSWORD');
+```
+
+### getPosts(sort: string, limit: number): Promise<Post[]>
+
+```typescript
+const posts = discuit.getPosts('latest', 50);
+```
+
+### getPost(publicId: string): Promise<Post | null>
+
+```typescript
+const post = discuit.getPost('12345');
+```
+
+### getNotifications(): Promise<Notification[]>
+
+```typescript
+const notifications = discuit.getNotifications();
+```
+
+### markNotificationAsSeen(id: number): Promise<void>
+
+```typescript
+await discuit.markNotificationAsSeen(80155);
+```
+
+### deleteNotification(id: number): Promise<void>
+
+```typescript
+await discuit.deleteNotification(80155);
+```
+
+### deleteAllNotifications(): Promise<void>
+
+```typescript
+await discuit.deleteAllNotifications();
+```
+
+### getComment(id: string): Promise<Comment | null>
+
+```typescript
+const comment = discuit.getComment('12345');
+```
+
+### postComment(publicId: number, content: string): Promise<Comment>
+
+```typescript
+const comment = await discuit.postComment(12345, 'Welcome to the community!');
+```
+
+### updateComment(publicId: string, commentId: string, content: string): Promise<Comment>
+
+```typescript
+const comment = await discuit.updateComment('12345', '67890', 'Welcome to the community!');
+```
+
+### deleteComment(postId: number, commentId: number): Promise<void>
+
+```typescript
+await discuit.deleteComment(12345, 67890);
+```
+
+### watchPosts(communities: string[], callback: (community: string, post: Post) => void): Promise<void>
+
+```typescript
+discuit.watchPosts(['news', 'politics', 'sports'], async (community, post) => {
+  console.log(community, post);
+
+  const comment = await discuit.postComment(post.id, 'Welcome to the community!');
+  await discuit.deleteComment(comment.postId, comment.id);
+});
+```
+
