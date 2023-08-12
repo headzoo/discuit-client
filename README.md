@@ -1,6 +1,25 @@
 Discuit Client
 ==============
 
+* [Install](#install)
+* [Usage](#usage)
+* [Methods](#methods)
+  * [login](#loginusername-string-password-string-promisevoid)
+  * [getMe](#getme-promiseuser--null)
+  * [getCommunities](#getcommunities-promisecommunity)
+  * [getPosts](#getpostssort-string-limit-number-promisepost)
+  * [getPost](#getpostpublicid-string-promisepost--null)
+  * [getNotifications](#getnotifications-promisenotification)
+  * [markNotificationAsSeen](#marknotificationasseenid-number-promisevoid)
+  * [deleteNotification](#deletenotificationid-number-promisevoid)
+  * [deleteAllNotifications](#deleteallnotifications-promisevoid)
+  * [getComment](#getcommentid-string-promisecomment--null)
+  * [postComment](#postcommentpublicid-number-content-string-promisecomment)
+  * [updateComment](#updatecommentpublicid-string-commentid-string-content-string-promisecomment)
+  * [deleteComment](#deletecommentpostid-number-commentid-number-promisevoid)
+  * [watchPosts](#watchpostscommunities-string-callback-community-string-post-post--void)
+  * [voteComment](#votecommentcommentid-string-up-boolean-promiseboolean)
+
 ## Install
 ```
 yarn add @headz/discuit
