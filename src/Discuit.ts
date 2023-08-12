@@ -7,6 +7,7 @@ import {
   IFetch,
   UserGroups,
   Comment,
+  Community,
 } from './types';
 import { MemorySeenChecker } from './MemorySeenChecker';
 import { AxiosFetch } from './AxiosFetch';
@@ -138,6 +139,51 @@ export class Discuit {
         }
 
         return null;
+      });
+  };
+
+  /**
+   * Returns the logged-in user.
+   */
+  public getMe = async (): Promise<User | null> => {
+    return await this.fetcher.request<User>('GET', '/_user').then((res) => {
+      if (!res || !res.data.id) {
+        return null;
+      }
+
+      return res.data;
+    });
+  };
+
+  /**
+   * Returns an array of the site communities.
+   */
+  public getCommunities = async (): Promise<Community[]> => {
+    return await this.fetcher.request<Community[]>('GET', '/communities').then((res) => {
+      if (!res) {
+        return null;
+      }
+
+      return res.data;
+    });
+  };
+
+  /**
+   * Votes on a comment.
+   *
+   * @param commentId The comment id.
+   * @param up Whether to upvote or downvote.
+   */
+  public voteComment = async (commentId: string, up: boolean): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request('POST', `/_commentVote`, {
+        commentId,
+        up,
+      })
+      .then(() => {
+        return true;
       });
   };
 

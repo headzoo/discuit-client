@@ -91,22 +91,34 @@ const discuit = new Discuit();
 await discuit.login('DISCUIT_USERNAME', 'DISCUIT_PASSWORD');
 ```
 
+### getMe(): Promise<User | null>
+
+```typescript
+const user = await discuit.getMe();
+```
+
+### getCommunities(): Promise<Community[]>
+
+```typescript
+const communities = await discuit.getCommunities();
+```
+
 ### getPosts(sort: string, limit: number): Promise<Post[]>
 
 ```typescript
-const posts = discuit.getPosts('latest', 50);
+const posts = await discuit.getPosts('latest', 50);
 ```
 
 ### getPost(publicId: string): Promise<Post | null>
 
 ```typescript
-const post = discuit.getPost('12345');
+const post = await discuit.getPost('12345');
 ```
 
 ### getNotifications(): Promise<Notification[]>
 
 ```typescript
-const notifications = discuit.getNotifications();
+const notifications = await discuit.getNotifications();
 ```
 
 ### markNotificationAsSeen(id: number): Promise<void>
@@ -130,7 +142,7 @@ await discuit.deleteAllNotifications();
 ### getComment(id: string): Promise<Comment | null>
 
 ```typescript
-const comment = discuit.getComment('12345');
+const comment = await discuit.getComment('12345');
 ```
 
 ### postComment(publicId: number, content: string): Promise<Comment>
@@ -162,3 +174,8 @@ discuit.watchPosts(['news', 'politics', 'sports'], async (community, post) => {
 });
 ```
 
+### voteComment(commentId: string, up: boolean): Promise<boolean>
+
+```typescript
+await discuit.voteComment('12345', true);
+```
