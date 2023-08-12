@@ -50,10 +50,6 @@ discuit.watchPosts(communities, async (community, post) => {
   const comment = await discuit.postComment(post.id, 'Welcome to the community!');
   await discuit.deleteComment(comment.postId, comment.id);
 });
-
-discuit.watchComments(communities, async (community, comment) => {
-    console.log(community, comment);
-});
 ```
 
 Configuration
