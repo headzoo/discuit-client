@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { PostSort, Post, User, Notification, ISeenChecker, IFetch, UserGroups, Comment } from './types';
+import { PostSort, Post, User, Notification, ISeenChecker, IFetch, UserGroups, Comment, Community, CommunityRule } from './types';
 import { ILogger } from './ILogger';
 /**
  * Callback given to the watchPosts() method.
@@ -83,6 +83,10 @@ export declare class Discuit {
      */
     login: (username: string, password: string) => Promise<User | null>;
     /**
+     * Returns the logged-in user.
+     */
+    getMe: () => Promise<User | null>;
+    /**
      * Watches for new posts.
      *
      * @param communities The communities to watch.
@@ -143,6 +147,13 @@ export declare class Discuit {
      */
     updateComment: (publicId: string, commentId: string, body: string) => Promise<Comment | null>;
     /**
+     * Votes on a comment.
+     *
+     * @param commentId The comment id.
+     * @param up Whether to upvote or downvote.
+     */
+    voteComment: (commentId: string, up: boolean) => Promise<boolean>;
+    /**
      * Returns the details of a post.
      *
      * @param publicId The PUBLIC id of the post.
@@ -155,6 +166,24 @@ export declare class Discuit {
      * @param limit The number of posts to fetch
      */
     getPosts: (sort?: PostSort, limit?: number) => Promise<Post[]>;
+    /**
+     * Votes a post up or down and returns the post. If already voted, then changes the vote.
+     *
+     * @param postId The post id.
+     * @param up Whether to upvote or downvote.
+     */
+    votePost: (postId: string, up: boolean) => Promise<boolean>;
+    /**
+     * Returns the comments for the given post.
+     *
+     * @param publicId The PUBLIC id of the post.
+     * @param parentId The id of the parent comment.
+     * @param next The next page of comments.
+     */
+    getPostComments: (publicId: string, parentId?: string, next?: string) => Promise<{
+        comments: Comment[];
+        next: string;
+    }>;
     /**
      * Returns all the user's notifications.
      *
@@ -192,6 +221,79 @@ export declare class Discuit {
      * Deletes all notifications.
      */
     deleteAllNotifications: () => Promise<boolean>;
+    /**
+     * Returns an array of the site communities.
+     */
+    getCommunities: () => Promise<Community[]>;
+    /**
+     * Returns the community with the given id.
+     *
+     * @param communityId The community id.
+     */
+    getCommunity: (communityId: string) => Promise<Community | null>;
+    /**
+     * Updates a community.
+     *
+     * @param communityId The community id.
+     * @param values The values to update.
+     */
+    updateCommunity: (communityId: string, values: Partial<Community>) => Promise<boolean>;
+    /**
+     * Make the authenticated user join or leave a community.
+     *
+     * @param communityId The community id.
+     * @param leave Whether to leave the community.
+     */
+    joinCommunity: (communityId: string, leave: boolean) => Promise<boolean>;
+    /**
+     * Returns the moderators of the given community.
+     *
+     * @param communityId The community id.
+     */
+    getCommunityMods: (communityId: string) => Promise<User[]>;
+    /**
+     * Adds a moderator to the given community.
+     *
+     * @param communityId The community id.
+     * @param username The username of the user to add as a mod.
+     */
+    addCommunityMod: (communityId: string, username: string) => Promise<boolean>;
+    /**
+     * Deletes a moderator from the given community.
+     *
+     * @param communityId The community id.
+     * @param username The username of the user to remove as a mod.
+     */
+    deleteCommunityMod: (communityId: string, username: string) => Promise<boolean>;
+    /**
+     * Returns the rules for the given community.
+     *
+     * @param communityId The community id.
+     */
+    getCommunityRules: (communityId: string) => Promise<CommunityRule[]>;
+    /**
+     * Adds a rule from the given community.
+     *
+     * @param communityId The community id.
+     * @param rule The rule.
+     * @param description The rule description.
+     */
+    createCommunityRule: (communityId: string, rule: string, description: string) => Promise<CommunityRule | null>;
+    /**
+     * Updates a community rule.
+     *
+     * @param communityId The community id.
+     * @param ruleId The rule id.
+     * @param rule The rule.
+     */
+    updateCommunityRule: (communityId: string, ruleId: number, rule: Partial<CommunityRule>) => Promise<boolean>;
+    /**
+     * Deletes a community rule.
+     *
+     * @param communityId The community id.
+     * @param ruleId The rule id.
+     */
+    deleteCommunityRule: (communityId: string, ruleId: number) => Promise<boolean>;
     /**
      * Throws an exception if the lib isn't authenticated.
      */

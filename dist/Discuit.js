@@ -78,6 +78,17 @@ class Discuit {
             });
         });
         /**
+         * Returns the logged-in user.
+         */
+        this.getMe = () => __awaiter(this, void 0, void 0, function* () {
+            return yield this.fetcher.request('GET', '/_user').then((res) => {
+                if (!res || !res.data.id) {
+                    return null;
+                }
+                return res.data;
+            });
+        });
+        /**
          * Watches for new posts.
          *
          * @param communities The communities to watch.
@@ -251,6 +262,23 @@ class Discuit {
             });
         });
         /**
+         * Votes on a comment.
+         *
+         * @param commentId The comment id.
+         * @param up Whether to upvote or downvote.
+         */
+        this.voteComment = (commentId, up) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('POST', `/_commentVote`, {
+                commentId,
+                up,
+            })
+                .then(() => {
+                return true;
+            });
+        });
+        /**
          * Returns the details of a post.
          *
          * @param publicId The PUBLIC id of the post.
@@ -283,6 +311,51 @@ class Discuit {
                     return [];
                 }
                 return res.data.posts;
+            });
+        });
+        /**
+         * Votes a post up or down and returns the post. If already voted, then changes the vote.
+         *
+         * @param postId The post id.
+         * @param up Whether to upvote or downvote.
+         */
+        this.votePost = (postId, up) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('POST', `/_postVote`, {
+                postId,
+                up,
+            })
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Returns the comments for the given post.
+         *
+         * @param publicId The PUBLIC id of the post.
+         * @param parentId The id of the parent comment.
+         * @param next The next page of comments.
+         */
+        this.getPostComments = (publicId, parentId, next) => __awaiter(this, void 0, void 0, function* () {
+            let url = `/posts/${publicId}/comments`;
+            if (parentId) {
+                url += `${url.indexOf('?') === -1 ? '?' : '&'}parentId=${parentId}`;
+            }
+            if (next) {
+                url += `${url.indexOf('?') === -1 ? '?' : '&'}next=${next}`;
+            }
+            return yield this.fetcher.request(`GET`, url).then((res) => {
+                if (!res) {
+                    if (this.logger) {
+                        this.logger.debug(`Got null response from /posts`);
+                    }
+                    return {
+                        comments: [],
+                        next: '',
+                    };
+                }
+                return res.data;
             });
         });
         /**
@@ -367,6 +440,172 @@ class Discuit {
         this.deleteAllNotifications = () => __awaiter(this, void 0, void 0, function* () {
             this.authCheck();
             return yield this.fetcher.request('POST', `/notifications?action=deleteAll`).then(() => {
+                return true;
+            });
+        });
+        /**
+         * Returns an array of the site communities.
+         */
+        this.getCommunities = () => __awaiter(this, void 0, void 0, function* () {
+            return yield this.fetcher.request('GET', '/communities').then((res) => {
+                if (!res) {
+                    return null;
+                }
+                return res.data;
+            });
+        });
+        /**
+         * Returns the community with the given id.
+         *
+         * @param communityId The community id.
+         */
+        this.getCommunity = (communityId) => __awaiter(this, void 0, void 0, function* () {
+            return yield this.fetcher
+                .request('GET', `/communities/${communityId}`)
+                .then((res) => {
+                if (!res) {
+                    return null;
+                }
+                return res.data;
+            });
+        });
+        /**
+         * Updates a community.
+         *
+         * @param communityId The community id.
+         * @param values The values to update.
+         */
+        this.updateCommunity = (communityId, values) => __awaiter(this, void 0, void 0, function* () {
+            return yield this.fetcher
+                .request('PUT', `/communities/${communityId}`, values)
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Make the authenticated user join or leave a community.
+         *
+         * @param communityId The community id.
+         * @param leave Whether to leave the community.
+         */
+        this.joinCommunity = (communityId, leave) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('POST', `/_joinCommunity`, {
+                communityId,
+                leave,
+            })
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Returns the moderators of the given community.
+         *
+         * @param communityId The community id.
+         */
+        this.getCommunityMods = (communityId) => __awaiter(this, void 0, void 0, function* () {
+            return yield this.fetcher
+                .request('GET', `/communities/${communityId}/mods`)
+                .then((res) => {
+                if (!res) {
+                    return [];
+                }
+                return res.data;
+            });
+        });
+        /**
+         * Adds a moderator to the given community.
+         *
+         * @param communityId The community id.
+         * @param username The username of the user to add as a mod.
+         */
+        this.addCommunityMod = (communityId, username) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('POST', `/communities/${communityId}/mods`, {
+                username,
+            })
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Deletes a moderator from the given community.
+         *
+         * @param communityId The community id.
+         * @param username The username of the user to remove as a mod.
+         */
+        this.deleteCommunityMod = (communityId, username) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('DELETE', `/communities/${communityId}/mods/${username}`)
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Returns the rules for the given community.
+         *
+         * @param communityId The community id.
+         */
+        this.getCommunityRules = (communityId) => __awaiter(this, void 0, void 0, function* () {
+            return yield this.fetcher
+                .request('GET', `/communities/${communityId}/rules`)
+                .then((res) => {
+                if (!res) {
+                    return [];
+                }
+                return res.data;
+            });
+        });
+        /**
+         * Adds a rule from the given community.
+         *
+         * @param communityId The community id.
+         * @param rule The rule.
+         * @param description The rule description.
+         */
+        this.createCommunityRule = (communityId, rule, description) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('POST', `/communities/${communityId}/rules`, {
+                rule,
+                description,
+            })
+                .then((res) => {
+                if (!res) {
+                    return null;
+                }
+                return res.data;
+            });
+        });
+        /**
+         * Updates a community rule.
+         *
+         * @param communityId The community id.
+         * @param ruleId The rule id.
+         * @param rule The rule.
+         */
+        this.updateCommunityRule = (communityId, ruleId, rule) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('PUT', `/communities/${communityId}/rules/${ruleId}`, rule)
+                .then(() => {
+                return true;
+            });
+        });
+        /**
+         * Deletes a community rule.
+         *
+         * @param communityId The community id.
+         * @param ruleId The rule id.
+         */
+        this.deleteCommunityRule = (communityId, ruleId) => __awaiter(this, void 0, void 0, function* () {
+            this.authCheck();
+            return yield this.fetcher
+                .request('DELETE', `/communities/${communityId}/rules/${ruleId}`)
+                .then(() => {
                 return true;
             });
         });

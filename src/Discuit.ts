@@ -8,6 +8,7 @@ import {
   UserGroups,
   Comment,
   Community,
+  CommunityRule,
 } from './types';
 import { MemorySeenChecker } from './MemorySeenChecker';
 import { AxiosFetch } from './AxiosFetch';
@@ -153,38 +154,6 @@ export class Discuit {
 
       return res.data;
     });
-  };
-
-  /**
-   * Returns an array of the site communities.
-   */
-  public getCommunities = async (): Promise<Community[]> => {
-    return await this.fetcher.request<Community[]>('GET', '/communities').then((res) => {
-      if (!res) {
-        return null;
-      }
-
-      return res.data;
-    });
-  };
-
-  /**
-   * Votes on a comment.
-   *
-   * @param commentId The comment id.
-   * @param up Whether to upvote or downvote.
-   */
-  public voteComment = async (commentId: string, up: boolean): Promise<boolean> => {
-    this.authCheck();
-
-    return await this.fetcher
-      .request('POST', `/_commentVote`, {
-        commentId,
-        up,
-      })
-      .then(() => {
-        return true;
-      });
   };
 
   /**
@@ -399,6 +368,25 @@ export class Discuit {
   };
 
   /**
+   * Votes on a comment.
+   *
+   * @param commentId The comment id.
+   * @param up Whether to upvote or downvote.
+   */
+  public voteComment = async (commentId: string, up: boolean): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request('POST', `/_commentVote`, {
+        commentId,
+        up,
+      })
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
    * Returns the details of a post.
    *
    * @param publicId The PUBLIC id of the post.
@@ -437,6 +425,61 @@ export class Discuit {
 
         return res.data.posts;
       });
+  };
+
+  /**
+   * Votes a post up or down and returns the post. If already voted, then changes the vote.
+   *
+   * @param postId The post id.
+   * @param up Whether to upvote or downvote.
+   */
+  public votePost = async (postId: string, up: boolean): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request('POST', `/_postVote`, {
+        postId,
+        up,
+      })
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
+   * Returns the comments for the given post.
+   *
+   * @param publicId The PUBLIC id of the post.
+   * @param parentId The id of the parent comment.
+   * @param next The next page of comments.
+   */
+  public getPostComments = async (
+    publicId: string,
+    parentId?: string,
+    next?: string,
+  ): Promise<{ comments: Comment[]; next: string }> => {
+    let url = `/posts/${publicId}/comments`;
+    if (parentId) {
+      url += `${url.indexOf('?') === -1 ? '?' : '&'}parentId=${parentId}`;
+    }
+    if (next) {
+      url += `${url.indexOf('?') === -1 ? '?' : '&'}next=${next}`;
+    }
+
+    return await this.fetcher.request<Comment[]>(`GET`, url).then((res) => {
+      if (!res) {
+        if (this.logger) {
+          this.logger.debug(`Got null response from /posts`);
+        }
+
+        return {
+          comments: [],
+          next: '',
+        };
+      }
+
+      return res.data;
+    });
   };
 
   /**
@@ -542,6 +585,205 @@ export class Discuit {
     return await this.fetcher.request('POST', `/notifications?action=deleteAll`).then(() => {
       return true;
     });
+  };
+
+  /**
+   * Returns an array of the site communities.
+   */
+  public getCommunities = async (): Promise<Community[]> => {
+    return await this.fetcher.request<Community[]>('GET', '/communities').then((res) => {
+      if (!res) {
+        return null;
+      }
+
+      return res.data;
+    });
+  };
+
+  /**
+   * Returns the community with the given id.
+   *
+   * @param communityId The community id.
+   */
+  public getCommunity = async (communityId: string): Promise<Community | null> => {
+    return await this.fetcher
+      .request<Community>('GET', `/communities/${communityId}`)
+      .then((res) => {
+        if (!res) {
+          return null;
+        }
+
+        return res.data;
+      });
+  };
+
+  /**
+   * Updates a community.
+   *
+   * @param communityId The community id.
+   * @param values The values to update.
+   */
+  public updateCommunity = async (
+    communityId: string,
+    values: Partial<Community>,
+  ): Promise<boolean> => {
+    return await this.fetcher
+      .request<Community>('PUT', `/communities/${communityId}`, values)
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
+   * Make the authenticated user join or leave a community.
+   *
+   * @param communityId The community id.
+   * @param leave Whether to leave the community.
+   */
+  public joinCommunity = async (communityId: string, leave: boolean): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request<boolean>('POST', `/_joinCommunity`, {
+        communityId,
+        leave,
+      })
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
+   * Returns the moderators of the given community.
+   *
+   * @param communityId The community id.
+   */
+  public getCommunityMods = async (communityId: string): Promise<User[]> => {
+    return await this.fetcher
+      .request<User[]>('GET', `/communities/${communityId}/mods`)
+      .then((res) => {
+        if (!res) {
+          return [];
+        }
+
+        return res.data;
+      });
+  };
+
+  /**
+   * Adds a moderator to the given community.
+   *
+   * @param communityId The community id.
+   * @param username The username of the user to add as a mod.
+   */
+  public addCommunityMod = async (communityId: string, username: string): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request<boolean>('POST', `/communities/${communityId}/mods`, {
+        username,
+      })
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
+   * Deletes a moderator from the given community.
+   *
+   * @param communityId The community id.
+   * @param username The username of the user to remove as a mod.
+   */
+  public deleteCommunityMod = async (communityId: string, username: string): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request<boolean>('DELETE', `/communities/${communityId}/mods/${username}`)
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
+   * Returns the rules for the given community.
+   *
+   * @param communityId The community id.
+   */
+  public getCommunityRules = async (communityId: string): Promise<CommunityRule[]> => {
+    return await this.fetcher
+      .request<CommunityRule[]>('GET', `/communities/${communityId}/rules`)
+      .then((res) => {
+        if (!res) {
+          return [];
+        }
+
+        return res.data;
+      });
+  };
+
+  /**
+   * Adds a rule from the given community.
+   *
+   * @param communityId The community id.
+   * @param rule The rule.
+   * @param description The rule description.
+   */
+  public createCommunityRule = async (
+    communityId: string,
+    rule: string,
+    description: string,
+  ): Promise<CommunityRule | null> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request<CommunityRule>('POST', `/communities/${communityId}/rules`, {
+        rule,
+        description,
+      })
+      .then((res) => {
+        if (!res) {
+          return null;
+        }
+
+        return res.data;
+      });
+  };
+
+  /**
+   * Updates a community rule.
+   *
+   * @param communityId The community id.
+   * @param ruleId The rule id.
+   * @param rule The rule.
+   */
+  public updateCommunityRule = async (
+    communityId: string,
+    ruleId: number,
+    rule: Partial<CommunityRule>,
+  ): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request<boolean>('PUT', `/communities/${communityId}/rules/${ruleId}`, rule)
+      .then(() => {
+        return true;
+      });
+  };
+
+  /**
+   * Deletes a community rule.
+   *
+   * @param communityId The community id.
+   * @param ruleId The rule id.
+   */
+  public deleteCommunityRule = async (communityId: string, ruleId: number): Promise<boolean> => {
+    this.authCheck();
+
+    return await this.fetcher
+      .request<boolean>('DELETE', `/communities/${communityId}/rules/${ruleId}`)
+      .then(() => {
+        return true;
+      });
   };
 
   /**

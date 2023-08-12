@@ -6,19 +6,31 @@ Discuit Client
 * [Methods](#methods)
   * [login](#loginusername-string-password-string-promise)
   * [getMe](#getme-promiseuser--null)
-  * [getCommunities](#getcommunities-promisecommunity)
   * [getPosts](#getpostssort-string-limit-number-promisepost)
   * [getPost](#getpostpublicid-string-promisepost--null)
+  * [votePost](#votepostpostid-string-up-boolean-promise)
+  * [getPostComments](#getpostcommentspublicid-string-promise)
   * [getNotifications](#getnotifications-promisenotification)
   * [markNotificationAsSeen](#marknotificationasseenid-number-promise)
   * [deleteNotification](#deletenotificationid-number-promise)
   * [deleteAllNotifications](#deleteallnotifications-promise)
   * [getComment](#getcommentid-string-promisecomment--null)
   * [postComment](#postcommentpublicid-number-content-string-promise)
-  * [updateComment](#updatecommentpublicid-string-commentid-string-content-string-promisecomment)
+  * [updateComment](#updatecommentpublicid-string-commentid-string-content-string-promise)
   * [deleteComment](#deletecommentpostid-number-commentid-number-promise)
   * [watchPosts](#watchpostscommunities-string-callback-community-string-post-post)
   * [voteComment](#votecommentcommentid-string-up-boolean-promise)
+  * [getCommunities](#getcommunities-promisecommunity)
+  * [getCommunity](#getcommunitycommunityid-string-promisecommunity--null)
+  * [updateCommunity](#updatecommunitycommunityid-string-community-partialcommunity-promise)
+  * [joinCommunity](#joincommunitycommunityid-string-leave-boolean-promise)
+  * [getCommunityMods](#getcommunitymodscommunityid-string-promise)
+  * [addCommunityMod](#addcommunitymodcommunityid-string-username-string-promise)
+  * [deleteCommunityMod](#deletecommunitymodcommunityid-string-username-string-promise)
+  * [getCommunityRules](#getcommunityrulescommunityid-string-promise)
+  * [createCommunityRule](#createcommunityrulecommunityid-string-rule-string-description-string-promise)
+  * [updateCommunityRule](#updatecommunityrulecommunityid-string-ruleid-number-rule-partialcommuityrule-promise)
+  * [deleteCommunityRule](#deletecommunityrulecommunityid-string-ruleid-number-promise)
 
 ## Install
 ```
@@ -118,13 +130,6 @@ Returns the logged-in user.
 const user = await discuit.getMe();
 ```
 
-### getCommunities(): Promise<Community[]>
-Returns an array of the site communities.
-
-```typescript
-const communities = await discuit.getCommunities();
-```
-
 ### getPosts(sort: string, limit: number): Promise<Post[]>
 Fetches the latest posts.
 
@@ -137,6 +142,20 @@ Returns the details of a post.
 
 ```typescript
 const post = await discuit.getPost('12345');
+```
+
+### votePost(postId: string, up: boolean): Promise<boolean>
+Votes a post up or down and returns the post. If already voted, then changes the vote.
+
+```typescript
+await discuit.votePost('12345', true);
+```
+
+### getPostComments(publicId: string, parentId?: string, next?: string): Promise<{ comments: Comment[]; next: string }>
+Returns the comments for the given post.
+
+```typescript
+const comments = await discuit.getPostComments('12345');
 ```
 
 ### getNotifications(): Promise<Notification[]>
@@ -188,11 +207,11 @@ Updates a comment.
 const comment = await discuit.updateComment('12345', '67890', 'Welcome to the community!');
 ```
 
-### deleteComment(postId: number, commentId: number): Promise<void>
+### deleteComment(postId: string, commentId: string): Promise<void>
 Deletes a comment.
 
 ```typescript
-await discuit.deleteComment(12345, 67890);
+await discuit.deleteComment('12345', '67890');
 ```
 
 ### watchPosts(communities: string[], callback: (community: string, post: Post) => void): Promise<void>
@@ -212,4 +231,87 @@ Votes on a comment.
 
 ```typescript
 await discuit.voteComment('12345', true);
+```
+
+### getCommunities(): Promise<Community[]>
+Returns an array of the site communities.
+
+```typescript
+const communities = await discuit.getCommunities();
+```
+
+### getCommunity(communityId: string): Promise<Community | null>
+Returns the community with the given id.
+
+```typescript
+const community = await discuit.getCommunity('12346');
+```
+
+### updateCommunity(communityId: string, community: Partial<Community>): Promise<boolean>
+
+```typescript
+const community = await discuit.updateCommunity('12346', {
+  nsfw: true,
+  about: 'My community description.',
+});
+```
+
+### joinCommunity(communityId: string, leave: boolean): Promise<boolean>
+Make the authenticated user join or leave a community.
+
+```typescript
+await discuit.joinCommunity('12346', false);
+```
+
+### getCommunityMods(communityId: string): Promise<User[]>
+Returns the moderators of a community.
+
+```typescript
+const mods = await discuit.getCommunityMods('12346');
+```
+
+### addCommunityMod(communityId: string, username: string): Promise<boolean>
+Adds a moderator to a community.
+
+```typescript
+await discuit.addCommunityMod('12346', 'username');
+```
+
+### deleteCommunityMod(communityId: string, username: string): Promise<boolean>
+Removes a moderator from a community.
+
+```typescript
+await discuit.deleteCommunityMod('12346', 'username');
+```
+
+### getCommunityRules(communityId: string): Promise<CommunityRule[]>
+Returns the rules of a community.
+
+```typescript
+const rules = await discuit.getCommunityRules('12346');
+```
+
+### createCommunityRule(communityId: string, rule: string, description: string): Promise<boolean>
+Creates a rule for a community.
+
+```typescript
+await discuit.createCommunityRule('12346', 'Rule 1', 'This is rule 1.');
+```
+
+### updateCommunityRule(communityId: string, ruleId: number, rule: Partial<CommuityRule>): Promise<boolean>
+Updates a rule for a community.
+
+```typescript
+await discuit.updateCommunityRule('12346', 1, {
+  rule: 'Rule 1',
+  description: 'This is rule 1.',
+    zIndex: 4,
+});
+```
+
+### deleteCommunityRule(communityId: string, ruleId: number): Promise<boolean>
+Deletes a rule from a community.
+
+```typescript
+await discuit.deleteCommunityRule('12346', 1);
 ```
