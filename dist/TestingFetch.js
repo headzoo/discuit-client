@@ -26,17 +26,27 @@ class TestingFetch {
         this.path = path;
         this.callback = callback;
         /**
+         * Number of times the fetch method was called.
+         */
+        this.requestCount = 0;
+        /**
          * @inheritdoc
          */
         this.request = (method, path, body) => __awaiter(this, void 0, void 0, function* () {
+            this.requestCount++;
+            const req = {
+                method,
+                path,
+                body,
+            };
             if (method === this.method && path === this.path) {
-                return yield this.callback(body);
+                return {
+                    statusCode: 200,
+                    data: yield this.callback(req),
+                    headers: {},
+                };
             }
-            return Promise.resolve({
-                statusCode: 404,
-                data: {},
-                headers: {},
-            });
+            throw new Error(`Unexpected request: ${method} ${path}`);
         });
         /**
          * @inheritdoc

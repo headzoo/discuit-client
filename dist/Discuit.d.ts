@@ -177,10 +177,10 @@ export declare class Discuit {
      * Returns the comments for the given post.
      *
      * @param publicId The PUBLIC id of the post.
-     * @param parentId The id of the parent comment.
      * @param next The next page of comments.
+     * @param parentId The id of the parent comment.
      */
-    getPostComments: (publicId: string, parentId?: string, next?: string) => Promise<{
+    getPostComments: (publicId: string, next?: string, parentId?: string) => Promise<{
         comments: Comment[];
         next: string;
     }>;

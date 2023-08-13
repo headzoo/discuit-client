@@ -334,16 +334,16 @@ class Discuit {
          * Returns the comments for the given post.
          *
          * @param publicId The PUBLIC id of the post.
-         * @param parentId The id of the parent comment.
          * @param next The next page of comments.
+         * @param parentId The id of the parent comment.
          */
-        this.getPostComments = (publicId, parentId, next) => __awaiter(this, void 0, void 0, function* () {
+        this.getPostComments = (publicId, next, parentId) => __awaiter(this, void 0, void 0, function* () {
             let url = `/posts/${publicId}/comments`;
-            if (parentId) {
-                url += `${url.indexOf('?') === -1 ? '?' : '&'}parentId=${parentId}`;
-            }
             if (next) {
                 url += `${url.indexOf('?') === -1 ? '?' : '&'}next=${next}`;
+            }
+            if (parentId) {
+                url += `${url.indexOf('?') === -1 ? '?' : '&'}parentId=${parentId}`;
             }
             return yield this.fetcher.request(`GET`, url).then((res) => {
                 if (!res) {
@@ -378,6 +378,10 @@ class Discuit {
                         next: '',
                         items: [],
                     };
+                }
+                // Discuit returns null instead of an empty array.
+                if (!res.data.items) {
+                    res.data.items = [];
                 }
                 return res.data;
             });

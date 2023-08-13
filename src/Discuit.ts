@@ -511,6 +511,11 @@ export class Discuit {
           };
         }
 
+        // Discuit returns null instead of an empty array.
+        if (!res.data.items) {
+          res.data.items = [];
+        }
+
         return res.data;
       });
   };

@@ -1,5 +1,10 @@
 import { IFetch, FetchResponse, Method } from './types';
-type Callback = (body: any) => Promise<FetchResponse<any> | null>;
+export interface Request {
+    method: Method;
+    path: string;
+    body: any;
+}
+type Callback = (req: Request) => Promise<any>;
 /**
  * Fetcher used for testing.
  */
@@ -7,6 +12,10 @@ export declare class TestingFetch implements IFetch {
     private method;
     private path;
     private callback;
+    /**
+     * Number of times the fetch method was called.
+     */
+    requestCount: number;
     /**
      * Constructor
      *
