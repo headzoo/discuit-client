@@ -130,7 +130,7 @@ Returns the logged-in user.
 const user = await discuit.getMe();
 ```
 
-### getPosts(sort: string, limit: number): Promise<Post[]>
+### getPosts(sort: string, limit: number, communityId?: string): Promise<Post[]>
 Fetches the latest posts.
 
 ```typescript

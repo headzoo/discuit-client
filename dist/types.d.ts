@@ -169,7 +169,7 @@ export interface User {
     bannedAt: string | null;
     isBan: boolean;
     notificationsNewCount: number;
-    moddingList: null;
+    moddingList: Community[];
 }
 /**
  * Used to determine whether the watch() command has seen a post before.

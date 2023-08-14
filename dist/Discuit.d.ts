@@ -128,8 +128,9 @@ export declare class Discuit {
      * @param publicId The PUBLIC id of the post.
      * @param body The comment body.
      * @param parentCommentId The id of the parent comment.
+     * @param userGroup The user group to submit as.
      */
-    postComment: (publicId: string, body: string, parentCommentId?: string | null) => Promise<Comment | null>;
+    postComment: (publicId: string, body: string, parentCommentId?: string | null, userGroup?: 'normal' | 'mods') => Promise<Comment | null>;
     /**
      * Deletes a comment.
      *
@@ -164,8 +165,9 @@ export declare class Discuit {
      *
      * @param sort How to sort the posts.
      * @param limit The number of posts to fetch
+     * @param communityId The community id to fetch posts for.
      */
-    getPosts: (sort?: PostSort, limit?: number) => Promise<Post[]>;
+    getPosts: (sort?: PostSort, limit?: number, communityId?: string) => Promise<Post[]>;
     /**
      * Votes a post up or down and returns the post. If already voted, then changes the vote.
      *

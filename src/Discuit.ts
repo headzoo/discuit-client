@@ -178,7 +178,7 @@ export class Discuit {
       this.watchPostsInterval = setInterval(this.watchPostsLoop, this.watchTimeout as number);
       if (this.logger) {
         this.logger.debug(
-          `Watching ${communities.length} communities at interval ${this.watchPostsInterval}`,
+          `Watching ${communities.length} communities at interval ${this.watchTimeout}`,
         );
       }
     }
@@ -272,7 +272,7 @@ export class Discuit {
       );
       if (this.logger) {
         this.logger.debug(
-          `Watching ${communities.length} communities at interval ${this.watchCommentsInterval}`,
+          `Watching ${communities.length} communities at interval ${this.watchTimeout}`,
         );
       }
     }
@@ -286,7 +286,55 @@ export class Discuit {
    *
    * Checks for new comments and calls the callbacks.
    */
-  private watchCommentsLoop = async (): Promise<void> => {};
+  private watchCommentsLoop = async (): Promise<void> => {
+    try {
+      if (this.logger) {
+        this.logger.debug('Running watch loop.');
+      }
+
+      for (let i = 0; i < this.watchersComments.length; i++) {
+        const watcher = this.watchersComments[i];
+        const activity = await this.getPosts('activity', 50, watcher.community);
+
+        for (let j = 0; j < activity.length; j++) {
+          const post = activity[j];
+          const comments = await this.getPostComments(post.publicId);
+
+          for (let k = 0; k < comments.comments.length; k++) {
+            const comment = comments.comments[k];
+
+            // Have we already seen this?
+            const seenKey = `comment-${comment.id}-${comment.editedAt ? comment.editedAt : '0'}`;
+            if (await this.seenChecker.isSeen(seenKey)) {
+              if (this.logger) {
+                this.logger.debug(
+                  `Skipping comment ${comment.id} because it has already been seen`,
+                );
+              }
+              continue;
+            }
+
+            for (let l = 0; l < watcher.callbacks.length; l++) {
+              try {
+                watcher.callbacks[l](post.communityName, comment);
+              } catch (error) {
+                if (this.logger) {
+                  this.logger.error(error as string);
+                }
+              }
+
+              await this.seenChecker.add(seenKey);
+              await sleep(this.sleepPeriod);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      if (this.logger) {
+        this.logger.error(error as string);
+      }
+    }
+  };
 
   /**
    * Returns the comment with the given id.
@@ -305,16 +353,18 @@ export class Discuit {
    * @param publicId The PUBLIC id of the post.
    * @param body The comment body.
    * @param parentCommentId The id of the parent comment.
+   * @param userGroup The user group to submit as.
    */
   public postComment = async (
     publicId: string,
     body: string,
     parentCommentId: string | null = null,
+    userGroup?: 'normal' | 'mods',
   ): Promise<Comment | null> => {
     this.authCheck();
 
     return await this.fetcher
-      .request('POST', `/posts/${publicId}/comments?userGroup=normal`, {
+      .request('POST', `/posts/${publicId}/comments?userGroup=${userGroup || 'normal'}`, {
         body,
         parentCommentId,
       })
@@ -410,21 +460,29 @@ export class Discuit {
    *
    * @param sort How to sort the posts.
    * @param limit The number of posts to fetch
+   * @param communityId The community id to fetch posts for.
    */
-  public getPosts = async (sort: PostSort = 'latest', limit: number = 10): Promise<Post[]> => {
-    return await this.fetcher
-      .request<{ posts: Post[] }>('GET', `/posts?sort=${sort}&limit=${limit}`)
-      .then((res) => {
-        if (!res) {
-          if (this.logger) {
-            this.logger.debug(`Got null response from /posts`);
-          }
+  public getPosts = async (
+    sort: PostSort = 'latest',
+    limit: number = 10,
+    communityId?: string,
+  ): Promise<Post[]> => {
+    let url = `/posts?sort=${sort}&limit=${limit}`;
+    if (communityId) {
+      url = `${url}&communityId=${communityId}`;
+    }
 
-          return [];
+    return await this.fetcher.request<{ posts: Post[] }>('GET', url).then((res) => {
+      if (!res) {
+        if (this.logger) {
+          this.logger.debug(`Got null response from /posts`);
         }
 
-        return res.data.posts;
-      });
+        return [];
+      }
+
+      return res.data.posts;
+    });
   };
 
   /**

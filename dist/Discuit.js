@@ -108,7 +108,7 @@ class Discuit {
             if (!this.watchPostsInterval) {
                 this.watchPostsInterval = setInterval(this.watchPostsLoop, this.watchTimeout);
                 if (this.logger) {
-                    this.logger.debug(`Watching ${communities.length} communities at interval ${this.watchPostsInterval}`);
+                    this.logger.debug(`Watching ${communities.length} communities at interval ${this.watchTimeout}`);
                 }
             }
             // Automatically run the watch loop the first time this method is called.
@@ -189,7 +189,7 @@ class Discuit {
             if (!this.watchCommentsInterval) {
                 this.watchCommentsInterval = setInterval(this.watchCommentsLoop, this.watchCommentsTimeout);
                 if (this.logger) {
-                    this.logger.debug(`Watching ${communities.length} communities at interval ${this.watchCommentsInterval}`);
+                    this.logger.debug(`Watching ${communities.length} communities at interval ${this.watchTimeout}`);
                 }
             }
             // Automatically run the watch loop the first time this method is called.
@@ -200,7 +200,49 @@ class Discuit {
          *
          * Checks for new comments and calls the callbacks.
          */
-        this.watchCommentsLoop = () => __awaiter(this, void 0, void 0, function* () { });
+        this.watchCommentsLoop = () => __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (this.logger) {
+                    this.logger.debug('Running watch loop.');
+                }
+                for (let i = 0; i < this.watchersComments.length; i++) {
+                    const watcher = this.watchersComments[i];
+                    const activity = yield this.getPosts('activity', 50, watcher.community);
+                    for (let j = 0; j < activity.length; j++) {
+                        const post = activity[j];
+                        const comments = yield this.getPostComments(post.publicId);
+                        for (let k = 0; k < comments.comments.length; k++) {
+                            const comment = comments.comments[k];
+                            // Have we already seen this?
+                            const seenKey = `comment-${comment.id}-${comment.editedAt ? comment.editedAt : '0'}`;
+                            if (yield this.seenChecker.isSeen(seenKey)) {
+                                if (this.logger) {
+                                    this.logger.debug(`Skipping comment ${comment.id} because it has already been seen`);
+                                }
+                                continue;
+                            }
+                            for (let l = 0; l < watcher.callbacks.length; l++) {
+                                try {
+                                    watcher.callbacks[l](post.communityName, comment);
+                                }
+                                catch (error) {
+                                    if (this.logger) {
+                                        this.logger.error(error);
+                                    }
+                                }
+                                yield this.seenChecker.add(seenKey);
+                                yield (0, utils_1.sleep)(this.sleepPeriod);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (error) {
+                if (this.logger) {
+                    this.logger.error(error);
+                }
+            }
+        });
         /**
          * Returns the comment with the given id.
          *
@@ -217,11 +259,12 @@ class Discuit {
          * @param publicId The PUBLIC id of the post.
          * @param body The comment body.
          * @param parentCommentId The id of the parent comment.
+         * @param userGroup The user group to submit as.
          */
-        this.postComment = (publicId, body, parentCommentId = null) => __awaiter(this, void 0, void 0, function* () {
+        this.postComment = (publicId, body, parentCommentId = null, userGroup) => __awaiter(this, void 0, void 0, function* () {
             this.authCheck();
             return yield this.fetcher
-                .request('POST', `/posts/${publicId}/comments?userGroup=normal`, {
+                .request('POST', `/posts/${publicId}/comments?userGroup=${userGroup || 'normal'}`, {
                 body,
                 parentCommentId,
             })
@@ -299,11 +342,14 @@ class Discuit {
          *
          * @param sort How to sort the posts.
          * @param limit The number of posts to fetch
+         * @param communityId The community id to fetch posts for.
          */
-        this.getPosts = (sort = 'latest', limit = 10) => __awaiter(this, void 0, void 0, function* () {
-            return yield this.fetcher
-                .request('GET', `/posts?sort=${sort}&limit=${limit}`)
-                .then((res) => {
+        this.getPosts = (sort = 'latest', limit = 10, communityId) => __awaiter(this, void 0, void 0, function* () {
+            let url = `/posts?sort=${sort}&limit=${limit}`;
+            if (communityId) {
+                url = `${url}&communityId=${communityId}`;
+            }
+            return yield this.fetcher.request('GET', url).then((res) => {
                 if (!res) {
                     if (this.logger) {
                         this.logger.debug(`Got null response from /posts`);

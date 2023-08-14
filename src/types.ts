@@ -180,7 +180,7 @@ export interface User {
   bannedAt: string | null;
   isBan: boolean;
   notificationsNewCount: number;
-  moddingList: null;
+  moddingList: Community[];
 }
 
 /**
