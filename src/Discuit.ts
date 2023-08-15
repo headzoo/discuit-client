@@ -210,8 +210,15 @@ export class Discuit {
       }
 
       const recent = await this.getPosts('latest', 50);
-      for (let i = 0; i < recent.length; i++) {
-        const post = recent[i];
+      if (!recent) {
+        if (this.logger) {
+          this.logger.debug('getPosts return null.');
+        }
+        return;
+      }
+
+      for (let i = 0; i < recent.posts.length; i++) {
+        const post = recent.posts[i];
 
         // Have we already seen this?
         if (await this.seenChecker.isSeen(`post-${post.id}`)) {
@@ -294,14 +301,47 @@ export class Discuit {
 
       for (let i = 0; i < this.watchersComments.length; i++) {
         const watcher = this.watchersComments[i];
-        const activity = await this.getPosts('activity', 50, watcher.community);
 
-        for (let j = 0; j < activity.length; j++) {
-          const post = activity[j];
-          const comments = await this.getPostComments(post.publicId);
+        // Check the 'activity' feed, which contains posts with recent comment activity.
+        const activity = await this.getPosts('activity', 50, '', watcher.community);
+        if (!activity) {
+          if (this.logger) {
+            this.logger.debug('getPosts return null.');
+          }
+          continue;
+        } else {
+          if (this.logger) {
+            this.logger.debug(`Got ${activity.posts.length} posts.`);
+          }
+        }
 
-          for (let k = 0; k < comments.comments.length; k++) {
-            const comment = comments.comments[k];
+        // Loop through the posts and get the comments.
+        for (let j = 0; j < activity.posts.length; j++) {
+          const post = activity.posts[j];
+
+          // Slurp down all the comments in thread.
+          let counter = 0;
+          let next = '';
+          let comments: Comment[] = [];
+          do {
+            const c = await this.getPostComments(post.publicId, next);
+            if (c.comments.length !== 0) {
+              comments = comments.concat(c.comments);
+            }
+            if (c && c.next) {
+              next = c.next;
+            }
+            if (++counter > 10) {
+              break;
+            }
+          } while (next !== '');
+          if (this.logger) {
+            this.logger.debug(`Got ${comments.length} comments.`);
+          }
+
+          // Loop through the comments and call the watchers.
+          for (let k = 0; k < comments.length; k++) {
+            const comment = comments[k];
 
             // Have we already seen this?
             const seenKey = `comment-${comment.id}-${comment.editedAt ? comment.editedAt : '0'}`;
@@ -314,6 +354,7 @@ export class Discuit {
               continue;
             }
 
+            // Loop through the watchers.
             for (let l = 0; l < watcher.callbacks.length; l++) {
               try {
                 watcher.callbacks[l](post.communityName, comment);
@@ -460,28 +501,33 @@ export class Discuit {
    *
    * @param sort How to sort the posts.
    * @param limit The number of posts to fetch
+   * @param next The next page of posts.
    * @param communityId The community id to fetch posts for.
    */
   public getPosts = async (
     sort: PostSort = 'latest',
     limit: number = 10,
+    next?: string,
     communityId?: string,
-  ): Promise<Post[]> => {
+  ): Promise<{ posts: Post[]; next: string } | null> => {
     let url = `/posts?sort=${sort}&limit=${limit}`;
     if (communityId) {
       url = `${url}&communityId=${communityId}`;
     }
+    if (next) {
+      url = `${url}&next=${next}`;
+    }
 
-    return await this.fetcher.request<{ posts: Post[] }>('GET', url).then((res) => {
+    return await this.fetcher.request<{ posts: Post[]; next: string }>('GET', url).then((res) => {
       if (!res) {
         if (this.logger) {
           this.logger.debug(`Got null response from /posts`);
         }
 
-        return [];
+        return null;
       }
 
-      return res.data.posts;
+      return res.data;
     });
   };
 

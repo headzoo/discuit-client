@@ -165,9 +165,13 @@ export declare class Discuit {
      *
      * @param sort How to sort the posts.
      * @param limit The number of posts to fetch
+     * @param next The next page of posts.
      * @param communityId The community id to fetch posts for.
      */
-    getPosts: (sort?: PostSort, limit?: number, communityId?: string) => Promise<Post[]>;
+    getPosts: (sort?: PostSort, limit?: number, next?: string, communityId?: string) => Promise<{
+        posts: Post[];
+        next: string;
+    } | null>;
     /**
      * Votes a post up or down and returns the post. If already voted, then changes the vote.
      *
