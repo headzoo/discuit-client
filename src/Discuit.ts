@@ -289,6 +289,17 @@ export class Discuit {
   };
 
   /**
+   * Stops watching for new comments.
+   */
+  public unwatchComments = (): void => {
+    this.watchersComments = [];
+    clearInterval(this.watchCommentsInterval);
+    if (this.logger) {
+      this.logger.debug('Watching stopped.');
+    }
+  };
+
+  /**
    * Callback for setInterval.
    *
    * Checks for new comments and calls the callbacks.

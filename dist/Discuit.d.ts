@@ -111,6 +111,10 @@ export declare class Discuit {
      */
     watchComments: (communities: string[], cb: WatchCommentsCallback) => void;
     /**
+     * Stops watching for new comments.
+     */
+    unwatchComments: () => void;
+    /**
      * Callback for setInterval.
      *
      * Checks for new comments and calls the callbacks.
