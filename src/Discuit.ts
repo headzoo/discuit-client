@@ -660,7 +660,7 @@ export class Discuit {
    *
    * @param id The notification id.
    */
-  public markNotificationAsSeen = async (id: string): Promise<boolean> => {
+  public markNotificationAsSeen = async (id: number): Promise<boolean> => {
     this.authCheck();
 
     return await this.fetcher
@@ -688,7 +688,7 @@ export class Discuit {
    *
    * @param id The notification id.
    */
-  public deleteNotification = async (id: string): Promise<boolean> => {
+  public deleteNotification = async (id: number): Promise<boolean> => {
     this.authCheck();
 
     return await this.fetcher.request('DELETE', `/notifications/${id}`).then(() => {

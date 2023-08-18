@@ -216,7 +216,7 @@ export declare class Discuit {
      *
      * @param id The notification id.
      */
-    markNotificationAsSeen: (id: string) => Promise<boolean>;
+    markNotificationAsSeen: (id: number) => Promise<boolean>;
     /**
      * Marks all notifications as seen.
      */
@@ -226,7 +226,7 @@ export declare class Discuit {
      *
      * @param id The notification id.
      */
-    deleteNotification: (id: string) => Promise<boolean>;
+    deleteNotification: (id: number) => Promise<boolean>;
     /**
      * Deletes all notifications.
      */
