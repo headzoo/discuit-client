@@ -27,6 +27,10 @@ export declare class TestingFetch implements IFetch {
     /**
      * @inheritdoc
      */
+    setLogger: () => void;
+    /**
+     * @inheritdoc
+     */
     request: <T>(method: Method, path: string, body: any) => Promise<FetchResponse<T> | null>;
     /**
      * @inheritdoc

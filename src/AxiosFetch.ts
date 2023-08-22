@@ -46,6 +46,13 @@ export class AxiosFetch implements IFetch {
   }
 
   /**
+   * @inheritDoc
+   */
+  public setLogger = (logger: ILogger) => {
+    this.logger = logger;
+  };
+
+  /**
    * @inheritdoc
    */
   public hasToken = (): boolean => {

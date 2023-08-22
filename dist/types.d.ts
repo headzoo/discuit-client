@@ -1,3 +1,4 @@
+import { ILogger } from './ILogger';
 /**
  * How posts should be sorted.
  */
@@ -200,6 +201,10 @@ export interface IFetch {
      * Gets a CSRF token.
      */
     getToken: () => Promise<string | null>;
+    /**
+     * Sets the logger.
+     */
+    setLogger: (logger: ILogger) => void;
     /**
      * Makes an HTTP request.
      *

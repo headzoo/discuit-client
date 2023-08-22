@@ -76,6 +76,12 @@ export declare class Discuit {
      */
     constructor(fetcher?: IFetch);
     /**
+     * Sets the logger.
+     *
+     * @param logger The logger.
+     */
+    setLogger: (logger: ILogger) => void;
+    /**
      * Logs into the server.
      *
      * @param username The username.

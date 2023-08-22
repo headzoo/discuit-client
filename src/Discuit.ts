@@ -108,6 +108,16 @@ export class Discuit {
   }
 
   /**
+   * Sets the logger.
+   *
+   * @param logger The logger.
+   */
+  public setLogger = (logger: ILogger): void => {
+    this.logger = logger;
+    this.fetcher.setLogger(logger);
+  };
+
+  /**
    * Logs into the server.
    *
    * @param username The username.

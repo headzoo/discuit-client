@@ -46,6 +46,15 @@ class Discuit {
          */
         this.seenChecker = new MemorySeenChecker_1.MemorySeenChecker();
         /**
+         * Sets the logger.
+         *
+         * @param logger The logger.
+         */
+        this.setLogger = (logger) => {
+            this.logger = logger;
+            this.fetcher.setLogger(logger);
+        };
+        /**
          * Logs into the server.
          *
          * @param username The username.

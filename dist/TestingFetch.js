@@ -32,6 +32,10 @@ class TestingFetch {
         /**
          * @inheritdoc
          */
+        this.setLogger = () => { };
+        /**
+         * @inheritdoc
+         */
         this.request = (method, path, body) => __awaiter(this, void 0, void 0, function* () {
             this.requestCount++;
             const req = {

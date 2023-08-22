@@ -33,6 +33,11 @@ export class TestingFetch implements IFetch {
   /**
    * @inheritdoc
    */
+  public setLogger = () => {};
+
+  /**
+   * @inheritdoc
+   */
   public request = async <T>(
     method: Method,
     path: string,

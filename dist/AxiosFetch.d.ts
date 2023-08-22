@@ -29,6 +29,10 @@ export declare class AxiosFetch implements IFetch {
      */
     constructor(logger: ILogger | null);
     /**
+     * @inheritDoc
+     */
+    setLogger: (logger: ILogger) => void;
+    /**
      * @inheritdoc
      */
     hasToken: () => boolean;

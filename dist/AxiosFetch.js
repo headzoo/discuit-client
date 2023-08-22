@@ -34,6 +34,12 @@ class AxiosFetch {
          */
         this.cookie = null;
         /**
+         * @inheritDoc
+         */
+        this.setLogger = (logger) => {
+            this.logger = logger;
+        };
+        /**
          * @inheritdoc
          */
         this.hasToken = () => {
