@@ -1,6 +1,6 @@
 {
   "name": "@headz/discuit",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "main": "dist/index.js",
   "description": "A simple, lightweight, and easy to use Discord API wrapper for Node.js and browser.",
   "license": "MIT",
